@@ -17,27 +17,14 @@ jobs:
         distribution: 'zulu'
         java-version: '11'
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential ccache git python3-pip python3-setuptools \
-          libssl-dev zlib1g-dev libffi-dev libbz2-dev libreadline-dev \
-          libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-          xz-utils tk-dev libxml2-dev libxmlsec1-dev liblzma-dev
-
-    - name: Install Buildozer and Cython
-      run: |
-        pip3 install --upgrade pip
-        pip3 install --upgrade cython==0.29.33
-        pip3 install --upgrade buildozer
-
     - name: Build with Buildozer
-      working-directory: sltellantisBag
+      uses: kivy/buildozer-action@v1
+      with:
+        buildozer_version: master
+        android_ndk: r25b
+        command: buildozer -v android debug
       env:
-        ANDROIDNDK: /home/runner/.buildozer/android/platform/android-ndk-r25b
-      run: |
-        buildozer -v android debug
+        WORKDIR: sltellantisBag
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
