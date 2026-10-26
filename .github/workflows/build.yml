@@ -1,45 +1,44 @@
 name: Compile APK Android com Buildozer
 
 on:
-push:
-branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
-build:
-runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-steps:
-- uses: actions/checkout@v3
+    steps:
+    - uses: actions/checkout@v3
 
-- name: Set up JDK
-uses: actions/setup-java@v3
-with:
-distribution: 'zulu'
-java-version: '11'
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '11'
 
-- name: Install dependencies
-run: |
-sudo apt-get update
-sudo apt-get install -y \
-build-essential ccache git python3-pip python3-setuptools \
-libssl-dev zlib1g-dev libffi-dev libbz2-dev libreadline-dev \
-libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-xz-utils tk-dev libxml2-dev libxmlsec1-dev liblzma-dev
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential ccache git python3-pip python3-setuptools \
+          libssl-dev zlib1g-dev libffi-dev libbz2-dev libreadline-dev \
+          libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+          xz-utils tk-dev libxml2-dev libxmlsec1-dev liblzma-dev
 
-- name: Install Buildozer and Cython
-run: |
-pip3 install --upgrade pip
-pip3 install --upgrade cython==0.29.33
-pip3 install --upgrade buildozer
+    - name: Install Buildozer and Cython
+      run: |
+        pip3 install --upgrade pip
+        pip3 install --upgrade cython==0.29.33
+        pip3 install --upgrade buildozer
 
-- name: Build with Buildozer
-working-directory: sltellantisBag
-run: |
-buildozer -v android debug
+    - name: Build with Buildozer
+      working-directory: sltellantisBag
+      run: |
+        buildozer -v android debug
 
-- name: Upload APK
-uses: actions/upload-artifact@v4
-with:
-name: pacotes-apk
-path: sltellantisBag/bin/*.apk
-```
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: pacotes-apk
+        path: sltellantisBag/bin/*.apk
