@@ -34,6 +34,8 @@ jobs:
 
     - name: Build with Buildozer
       working-directory: sltellantisBag
+      env:
+        ANDROIDNDK: /home/runner/.buildozer/android/platform/android-ndk-r25b
       run: |
         buildozer -v android debug
 
