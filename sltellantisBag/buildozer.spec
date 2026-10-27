@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,csv
 
 version = 0.1
 
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow==9.5.0
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow
 
 orientation = portrait
 fullscreen = 0
@@ -19,6 +19,8 @@ android.minapi = 21
 android.archs = arm64-v8a
 android.accept_sdk_license = True
 #android.permissions = INTERNET
+
+p4a.branch = v2024.01.21
 
 [buildozer]
 
