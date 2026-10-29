@@ -358,17 +358,14 @@ class ProductionScreen(Screen):
         with main_layout.canvas.before:
             Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
-        main_layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
-                         pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
+        main_layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size), pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
 
         header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 10])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
-        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
-                    pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
-        header.add_widget(
-            Label(text='ACOMPANHAMENTO DE PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='17sp', bold=True))
+        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size), pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+        header.add_widget(Label(text='ACOMPANHAMENTO DE PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='17sp', bold=True))
         main_layout.add_widget(header)
 
         scroll = ScrollView()
@@ -376,14 +373,11 @@ class ProductionScreen(Screen):
         content.bind(minimum_height=content.setter('height'))
 
         box_meta_card = BoxLayout(orientation='vertical', size_hint_y=None, height='95dp', padding=8, spacing=6)
-        lbl_meta_tit = Label(text='DEFINIÇÃO DE META (720 ou 360)', color=(0.12, 0.14, 0.18, 1), font_size='13sp',
-                             bold=True, halign='center')
+        lbl_meta_tit = Label(text='DEFINIÇÃO DE META (720 ou 360)', color=(0.12, 0.14, 0.18, 1), font_size='13sp', bold=True, halign='center')
         lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        self.input_meta_selecionada = TextInput(text='720', multiline=False, font_size='15sp', size_hint_y=None,
-                                                height='35dp', halign='center')
+        self.input_meta_selecionada = TextInput(text='720', multiline=False, font_size='15sp', size_hint_y=None, height='35dp', halign='center')
 
-        btn_salvar_meta = RoundedButton(text='Salvar Meta', bg_color=(0.85, 0.65, 0.1, 1), size_hint_y=None,
-                                        height='32dp')
+        btn_salvar_meta = RoundedButton(text='Salvar Meta', bg_color=(0.85, 0.65, 0.1, 1), size_hint_y=None, height='32dp')
         btn_salvar_meta.color = (0.12, 0.14, 0.18, 1)
         btn_salvar_meta.font_size = '12sp'
         btn_salvar_meta.bold = True
@@ -394,44 +388,39 @@ class ProductionScreen(Screen):
         box_meta_card.add_widget(btn_salvar_meta)
         content.add_widget(box_meta_card)
 
-        self.table_header = GridLayout(cols=6, size_hint_y=None, height='32dp', spacing=3)
-        self.table_header.add_widget(
-            Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='11sp', halign='center'))
-        self.table_header.add_widget(
-            Label(text='Meta HxH', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='11sp', halign='center'))
-        self.table_header.add_widget(
-            Label(text='Capacidade', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='11sp', halign='center'))
-        self.table_header.add_widget(
-            Label(text='Resultado', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='11sp', halign='center'))
-        self.table_header.add_widget(
-            Label(text='Produzido', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='11sp', halign='center'))
-        self.table_header.add_widget(
-            Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='11sp', halign='center'))
+        self.table_header = GridLayout(cols=6, size_hint_y=None, height='32dp', spacing=3, size_hint_x=1)
+        self.table_header.add_widget(Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
+        self.table_header.add_widget(Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
+        self.table_header.add_widget(Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
+        self.table_header.add_widget(Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
+        self.table_header.add_widget(Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='10sp', halign='center'))
+        self.table_header.add_widget(Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
         content.add_widget(self.table_header)
 
         self.dados_hxh_base = [
-            ("16:00 ás 17:00", 100, 100, 50, 50),
-            ("17:00 ás 18:00", 100, 200, 50, 100),
-            ("18:15 ás 19:00", 67, 267, 34, 134),
-            ("19:00 ás 19:15", 19, 286, 9, 143),
-            ("20:15 ás 21:00", 67, 353, 34, 177),
-            ("21:00 ás 22:00", 100, 453, 50, 227),
-            ("22:00 ás 23:00", 100, 553, 50, 277),
-            ("23:15 ás 00:00", 67, 620, 34, 310),
-            ("00:00 ás 01:09", 100, 720, 50, 360),
+            ("16:00-17:00", 100, 100, 50, 50),
+            ("17:00-18:00", 100, 200, 50, 100),
+            ("18:15-19:00", 67, 267, 34, 134),
+            ("19:00-19:15", 19, 286, 9, 143),
+            ("20:15-21:00", 67, 353, 34, 177),
+            ("21:00-22:00", 100, 453, 50, 227),
+            ("22:00-23:00", 100, 553, 50, 277),
+            ("23:15-00:00", 67, 620, 34, 310),
+            ("00:00-01:09", 100, 720, 50, 360),
         ]
 
         self.linhas_widgets = []
         self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=4)
 
         for hora, h720, cap720, h360, cap360 in self.dados_hxh_base:
-            row = GridLayout(cols=6, size_hint_y=None, height='38dp', spacing=3)
-            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center')
-            lbl_hxh = Label(text=str(h720), color=(0.12, 0.14, 0.18, 1), font_size='11sp', bold=True, halign='center')
-            lbl_cap = Label(text=str(cap720), color=(0.12, 0.14, 0.18, 1), font_size='11sp', halign='center')
-            txt_res = TextInput(text='', hint_text='Qtd', multiline=False, font_size='12sp', halign='center')
-            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='12sp', halign='center')
-            lbl_delta = Label(text='+0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='12sp', halign='center')
+            # Correção crucial: size_hint_x=1 garante que a linha ocupe toda a largura da tela
+            row = GridLayout(cols=6, size_hint_y=None, height='38dp', spacing=3, size_hint_x=1)
+            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center')
+            lbl_hxh = Label(text=str(h720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', bold=True, halign='center')
+            lbl_cap = Label(text=str(cap720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center')
+            txt_res = TextInput(text='', hint_text='Qtd', multiline=False, font_size='11sp', halign='center')
+            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center')
+            lbl_delta = Label(text='+0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center')
 
             linha_info = {
                 'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
@@ -454,31 +443,23 @@ class ProductionScreen(Screen):
         content.add_widget(self.tabela_linhas_layout)
 
         box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='40dp', spacing=10, padding=[0, 5])
-        self.lbl_total_pos = Label(text='Total Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='13sp',
-                                   halign='center')
-        self.lbl_total_neg = Label(text='Total Negativo: -0', color=(0.8, 0, 0, 1), bold=True, font_size='13sp',
-                                   halign='center')
+        self.lbl_total_pos = Label(text='Total Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='12sp', halign='center')
+        self.lbl_total_neg = Label(text='Total Negativo: -0', color=(0.8, 0, 0, 1), bold=True, font_size='12sp', halign='center')
         box_totais.add_widget(self.lbl_total_pos)
         box_totais.add_widget(self.lbl_total_neg)
         content.add_widget(box_totais)
 
         box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='48dp', spacing=8)
         btn_calcular = RoundedButton(text='CALCULAR', bg_color=(0.25, 0.65, 0.85, 1))
-        btn_calcular.color = (1, 1, 1, 1);
-        btn_calcular.bold = True;
-        btn_calcular.font_size = '12sp'
+        btn_calcular.color = (1, 1, 1, 1); btn_calcular.bold = True; btn_calcular.font_size = '11sp'
         btn_calcular.bind(on_release=self.calcular_totais)
 
         btn_salvar = RoundedButton(text='SALVAR', bg_color=(0.25, 0.7, 0.4, 1))
-        btn_salvar.color = (1, 1, 1, 1);
-        btn_salvar.bold = True;
-        btn_salvar.font_size = '12sp'
+        btn_salvar.color = (1, 1, 1, 1); btn_salvar.bold = True; btn_salvar.font_size = '11sp'
         btn_salvar.bind(on_release=self.salvar_dados)
 
         btn_compartilhar = RoundedButton(text='COMPARTILHAR', bg_color=(0.9, 0.6, 0.2, 1))
-        btn_compartilhar.color = (1, 1, 1, 1);
-        btn_compartilhar.bold = True;
-        btn_compartilhar.font_size = '11sp'
+        btn_compartilhar.color = (1, 1, 1, 1); btn_compartilhar.bold = True; btn_compartilhar.font_size = '10sp'
         btn_compartilhar.bind(on_release=self.compartilhar_dados)
 
         box_botoes.add_widget(btn_calcular)
@@ -562,18 +543,11 @@ class ProductionScreen(Screen):
         perfil = obter_perfil_atual()
         texto = f"*RELATÓRIOS MYBAG*\nMeta: {perfil['meta_hoje']} | Produzido: {perfil['total_produzido_hoje']} ({perfil['porcentagem_hoje']:.1f}%)\n{self.lbl_total_pos.text} | {self.lbl_total_neg.text}"
         Clipboard.copy(texto)
-        Popup(title='Compartilhar', content=Label(text='Relatório copiado para a área de transferência!'),
-              size_hint=(0.8, 0.3)).open()
+        Popup(title='Compartilhar', content=Label(text='Relatório copiado para a área de transferência!'), size_hint=(0.8, 0.3)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
-
-# ==========================================
-# TELA DE SUPORTE (COM TAREFAS DE QR CODE, CONTATO E CONFIGURAÇÕES)
-# ==========================================
-# ==========================================
 
 # TELA DE SUPORTE (APENAS CONTATO)
 # ==========================================
@@ -626,11 +600,9 @@ class SupportScreen(Screen):
         self.bg_rect.pos = instance.pos
 
 
+# ==========================================
 # TELA DE TAREFAS / QR CODE
 # ==========================================
-
-# ==========================================
-
 class TasksScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -638,19 +610,15 @@ class TasksScreen(Screen):
         with layout.canvas.before:
             Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
-        layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
-                    pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
+        layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size), pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
 
-        # Cabeçalho da Tela
         header = BoxLayout(size_hint_y=None, height='55dp', padding=10)
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             Rectangle(size=header.size, pos=header.size)
-        header.add_widget(
-            Label(text='TAREFAS - LEITURA QR CODE', color=(1.0, 0.82, 0.0, 1), bold=True, font_size='16sp'))
+        header.add_widget(Label(text='TAREFAS - LEITURA QR CODE', color=(1.0, 0.82, 0.0, 1), bold=True, font_size='16sp'))
         layout.add_widget(header)
 
-        # Área rolável do conteúdo
         scroll = ScrollView()
         content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=14, padding=16)
         content.bind(minimum_height=content.setter('height'))
@@ -670,18 +638,12 @@ class TasksScreen(Screen):
         btn_ler_qr.bind(on_release=self.iniciar_leitura_qr_sequencial)
         content.add_widget(btn_ler_qr)
 
-        content.add_widget(
-            Label(text='QR Code 1:', color=(0.12, 0.14, 0.18, 1), font_size='12sp', bold=True, size_hint_y=None,
-                  height='20dp', halign='left'))
-        self.input_qr1 = TextInput(text='', hint_text='Aguardando leitura do QR Code 1...', multiline=False,
-                                   font_size='13sp', size_hint_y=None, height='38dp', readonly=True)
+        content.add_widget(Label(text='QR Code 1:', color=(0.12, 0.14, 0.18, 1), font_size='12sp', bold=True, size_hint_y=None, height='20dp', halign='left'))
+        self.input_qr1 = TextInput(text='', hint_text='Aguardando leitura do QR Code 1...', multiline=False, font_size='13sp', size_hint_y=None, height='38dp', readonly=True)
         content.add_widget(self.input_qr1)
 
-        content.add_widget(
-            Label(text='QR Code 2:', color=(0.12, 0.14, 0.18, 1), font_size='12sp', bold=True, size_hint_y=None,
-                  height='20dp', halign='left'))
-        self.input_qr2 = TextInput(text='', hint_text='Aguardando leitura do QR Code 2...', multiline=False,
-                                   font_size='13sp', size_hint_y=None, height='38dp', readonly=True)
+        content.add_widget(Label(text='QR Code 2:', color=(0.12, 0.14, 0.18, 1), font_size='12sp', bold=True, size_hint_y=None, height='20dp', halign='left'))
+        self.input_qr2 = TextInput(text='', hint_text='Aguardando leitura do QR Code 2...', multiline=False, font_size='13sp', size_hint_y=None, height='38dp', readonly=True)
         content.add_widget(self.input_qr2)
 
         btn_checar = Button(
@@ -694,19 +656,14 @@ class TasksScreen(Screen):
 
         scroll.add_widget(content)
         layout.add_widget(scroll)
-
-        # Barra de navegação fixa corretamente na parte inferior da tela principal
         layout.add_widget(CriarBarraNavegacao(ativa='config'))
-
         self.add_widget(layout)
 
     def iniciar_leitura_qr_sequencial(self, instance):
-        Popup(title='Leitor QR', content=Label(text='Iniciando leitura sequencial via câmera...'),
-              size_hint=(0.8, 0.3)).open()
+        Popup(title='Leitor QR', content=Label(text='Iniciando leitura sequencial via câmera...'), size_hint=(0.8, 0.3)).open()
 
     def checar_dados_qr(self, instance):
-        Popup(title='Checagem', content=Label(text='Checando dados dos QR Codes capturados...'),
-              size_hint=(0.8, 0.3)).open()
+        Popup(title='Checagem', content=Label(text='Checando dados dos QR Codes capturados...'), size_hint=(0.8, 0.3)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
