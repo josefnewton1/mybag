@@ -388,13 +388,29 @@ class ProductionScreen(Screen):
         box_meta_card.add_widget(btn_salvar_meta)
         content.add_widget(box_meta_card)
 
-        self.table_header = GridLayout(cols=6, size_hint_y=None, height='32dp', spacing=3, size_hint_x=1)
-        self.table_header.add_widget(Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
-        self.table_header.add_widget(Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
-        self.table_header.add_widget(Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
-        self.table_header.add_widget(Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
-        self.table_header.add_widget(Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='10sp', halign='center'))
-        self.table_header.add_widget(Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center'))
+        # Cabeçalho da Tabela com largura fixa para evitar sobreposição
+        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=2,
+                                      size_hint_x=None, width='450dp')
+        self.table_header.add_widget(
+            Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
+                  size_hint_x=None, width='90dp'))
+        self.table_header.add_widget(
+            Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
+                  size_hint_x=None, width='60dp'))
+        self.table_header.add_widget(
+            Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
+                  size_hint_x=None, width='60dp'))
+        self.table_header.add_widget(
+            Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
+                  size_hint_x=None, width='75dp'))
+        self.table_header.add_widget(
+            Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='10sp', halign='center',
+                  size_hint_x=None, width='75dp'))
+        self.table_header.add_widget(
+            Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
+                  size_hint_x=None, width='75dp'))
+
+        # Envolvemos o cabeçalho em um ScrollView horizontal ou centralizado se necessário, ou adicionamos direto:
         content.add_widget(self.table_header)
 
         self.dados_hxh_base = [
@@ -413,14 +429,24 @@ class ProductionScreen(Screen):
         self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=4)
 
         for hora, h720, cap720, h360, cap360 in self.dados_hxh_base:
-            # Correção crucial: size_hint_x=1 garante que a linha ocupe toda a largura da tela
-            row = GridLayout(cols=6, size_hint_y=None, height='38dp', spacing=3, size_hint_x=1)
-            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center')
-            lbl_hxh = Label(text=str(h720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', bold=True, halign='center')
-            lbl_cap = Label(text=str(cap720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center')
-            txt_res = TextInput(text='', hint_text='Qtd', multiline=False, font_size='11sp', halign='center')
-            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center')
-            lbl_delta = Label(text='+0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center')
+            # Cada linha agora tem largura fixa definida, impedindo qualquer empilhamento vertical indesejado
+            row = BoxLayout(orientation='horizontal', size_hint_y=None, height='38dp', spacing=2, size_hint_x=None,
+                            width='450dp')
+
+            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center', size_hint_x=None,
+                          width='90dp')
+            lbl_hxh = Label(text=str(h720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', bold=True, halign='center',
+                            size_hint_x=None, width='60dp')
+            lbl_cap = Label(text=str(cap720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center',
+                            size_hint_x=None, width='60dp')
+
+            txt_res = TextInput(text='', hint_text='Qtd', multiline=False, font_size='11sp', halign='center',
+                                size_hint_x=None, width='75dp')
+
+            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
+                             size_hint_x=None, width='75dp')
+            lbl_delta = Label(text='+0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
+                              size_hint_x=None, width='75dp')
 
             linha_info = {
                 'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
