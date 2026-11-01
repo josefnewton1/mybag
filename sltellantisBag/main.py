@@ -1,6 +1,6 @@
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
-from screens import WelcomeScreen, HomeScreen, ReportsScreen, ProductionScreen, SupportScreen, TasksScreen
+from screens import WelcomeScreen, HomeScreen, ReportsScreen, ProductionScreen, HxhDetailScreen, TasksScreen, SupportScreen, ConfigScreen, ThemeScreen
 
 class MyBagApp(App):
     def build(self):
@@ -11,8 +11,11 @@ class MyBagApp(App):
         self.sm.add_widget(HomeScreen(name='inicio'))
         self.sm.add_widget(ReportsScreen(name='relatorios'))
         self.sm.add_widget(ProductionScreen(name='producao'))
-        self.sm.add_widget(TasksScreen(name='config'))       # Abre a tela de QR Code ao clicar em config
-        self.sm.add_widget(SupportScreen(name='suporte'))     # Abre a tela de suporte com o seu contato
+        self.sm.add_widget(HxhDetailScreen(name='hxh_detalhe'))
+        self.sm.add_widget(TasksScreen(name='tasks'))
+        self.sm.add_widget(ConfigScreen(name='config'))
+        self.sm.add_widget(ThemeScreen(name='theme_screen'))  # <--- ESTA LINHA FALTAVA NO SEU MAIN.PY
+        self.sm.add_widget(SupportScreen(name='suporte'))
 
         self.sm.current = 'welcome'
         return self.sm
