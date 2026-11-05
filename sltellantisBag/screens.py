@@ -12,7 +12,6 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
-from database import DADOS_APP, obter_perfil_atual, salvar_dados_gerais, obter_paleta_atual
 
 # Verificação e importação para leitura de QR Code e Câmera no Android
 try:
@@ -23,7 +22,7 @@ try:
 except ImportError:
     has_android = False
 
-from database import DADOS_APP, obter_perfil_atual, salvar_dados_gerais
+from database import DADOS_APP, obter_perfil_atual, salvar_dados_gerais, obter_paleta_atual
 from components import CircularAvatar, RoundedButton, CriarBarraNavegacao, abrir_seletor_foto
 
 
@@ -31,23 +30,12 @@ from components import CircularAvatar, RoundedButton, CriarBarraNavegacao, abrir
 # 1. TELA DE BOAS-VINDAS / LOGIN
 # ==========================================
 class WelcomeScreen(Screen):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         main_layout = BoxLayout(orientation='vertical', padding=25, spacing=15)
 
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA!
-            # É aqui que aplicamos a paleta de cores atualizada:
-            paleta = obter_paleta_atual()
-
-            # Muda a cor de fundo dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # Atualiza os dados normais do painel
-            self.atualizar_dados_dashboard()
         with main_layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
         main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
@@ -69,7 +57,8 @@ class WelcomeScreen(Screen):
                               bold=True, halign='left')
         lbl_instrucao.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
-        self.input_nome = TextInput(text=DADOS_APP["usuario_atual"], multiline=False, font_size='14sp',
+        self.input_nome = TextInput(text=DADOS_APP.get("usuario_atual", "José Nilton"), multiline=False,
+                                    font_size='14sp',
                                     size_hint_y=None, height='38dp', halign='center')
         self.input_nome.bind(text=self.ao_mudar_nome)
         box_input.add_widget(lbl_instrucao)
@@ -86,6 +75,10 @@ class WelcomeScreen(Screen):
         self.add_widget(main_layout)
         self.carregar_foto_usuario()
 
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
     def ao_mudar_nome(self, instance, valor):
         nome_limpo = valor.strip()
         if nome_limpo:
@@ -95,9 +88,8 @@ class WelcomeScreen(Screen):
 
     def carregar_foto_usuario(self):
         perfil = obter_perfil_atual()
-        # Mude de: perfil["foto_path"] para:
-        self.avatar_real.atualizar_imagem(perfil.get("foto_path", ""))
-
+        caminho_foto = perfil.get("foto_path", "") if isinstance(perfil, dict) else ""
+        self.avatar_real.atualizar_imagem(caminho_foto)
 
     def ir_para_inicio(self, instance):
         nome_digitado = self.input_nome.text.strip()
@@ -118,32 +110,14 @@ class WelcomeScreen(Screen):
 # 2. TELA DE INÍCIO (PAINEL DE CONTROLE)
 # ==========================================
 class HomeScreen(Screen):
-
-    def on_enter(self):
-        paleta = obter_paleta_atual()
-        # Atualiza a cor de fundo dinamicamente baseada no tema salvo
-        # Exemplo: self.bg_rect.rgba = paleta['bg']
-        self.atualizar_dados_dashboard()
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.main_layout = BoxLayout(orientation='vertical')
         with self.main_layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.size)
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA DE INÍCIO!
-
-            # 1. Puxamos a paleta correspondente ao tema salvo (padrao, escuro ou azul)
-            paleta = obter_paleta_atual()
-
-            # 2. Mudamos a cor do fundo (bg_rect) dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # 3. Atualizamos os dados normais do painel
-            self.atualizar_dados_dashboard()
         header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 10])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
@@ -232,15 +206,18 @@ class HomeScreen(Screen):
         self.add_widget(self.main_layout)
 
     def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
         self.atualizar_dados_dashboard()
 
     def atualizar_dados_dashboard(self):
         perfil = obter_perfil_atual()
-        self.lbl_nome.text = f'Bom dia, {DADOS_APP["usuario_atual"]}!'
-        self.avatar_perfil.atualizar_imagem(perfil.get("foto_path", ""))
-        total = perfil["total_produzido_hoje"]
-        meta = perfil["meta_hoje"]
-        pct = perfil["porcentagem_hoje"]
+        self.lbl_nome.text = f'Bom dia, {DADOS_APP.get("usuario_atual", "Nilton")}!'
+        caminho_foto = perfil.get("foto_path", "") if isinstance(perfil, dict) else ""
+        self.avatar_perfil.atualizar_imagem(caminho_foto)
+        total = perfil.get("total_produzido_hoje", 0) if isinstance(perfil, dict) else 0
+        meta = perfil.get("meta_hoje", 720) if isinstance(perfil, dict) else 720
+        pct = perfil.get("porcentagem_hoje", 0.0) if isinstance(perfil, dict) else 0.0
         self.lbl_prod_val.text = f'{total} UNIDADES PRODUZIDAS / META {meta}'
         emoji = "🟢" if pct >= 100 else "⚠️" if pct >= 80 else "❌"
         self.lbl_prod_pct.text = f'{pct:.1f}% Concluído {emoji}'
@@ -258,7 +235,7 @@ class ReportsScreen(Screen):
         super().__init__(**kwargs)
         self.main_layout = BoxLayout(orientation='vertical')
         with self.main_layout.canvas.before:
-            Color(0.12, 0.14, 0.18, 1)
+            self.bg_color = Color(0.12, 0.14, 0.18, 1)
             self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.size)
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
@@ -266,15 +243,16 @@ class ReportsScreen(Screen):
         with header.canvas.before:
             Color(0.08, 0.10, 0.13, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
-        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size), pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
-        header.add_widget(Label(text='📊 DASHBOARD EXECUTIVO', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True, halign='center'))
+        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
+                    pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+        header.add_widget(Label(text='📊 DASHBOARD EXECUTIVO', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True,
+                                halign='center'))
         self.main_layout.add_widget(header)
 
         self.scroll = ScrollView()
         self.content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=12, padding=12)
         self.content.bind(minimum_height=self.content.setter('height'))
 
-        # KPIs superiores
         self.grid_kpi = GridLayout(cols=2, size_hint_y=None, height='85dp', spacing=10)
         self.card_meta = self.criar_card_kpi("META DIÁRIA", "0 un", (0.2, 0.6, 0.8, 1))
         self.card_prod = self.criar_card_kpi("PRODUZIDO HOJE", "0 un", (0.2, 0.7, 0.4, 1))
@@ -282,23 +260,27 @@ class ReportsScreen(Screen):
         self.grid_kpi.add_widget(self.card_prod['layout'])
         self.content.add_widget(self.grid_kpi)
 
-        # Card de Status com altura fixa rígida para evitar sobreposição
         self.card_status = BoxLayout(orientation='vertical', size_hint_y=None, height='95dp', padding=10, spacing=4)
         with self.card_status.canvas.before:
             Color(0.18, 0.22, 0.28, 1)
             self.cs_bg = RoundedRectangle(size=self.card_status.size, pos=self.card_status.pos, radius=[10])
-        self.card_status.bind(size=lambda inst, val: setattr(self.cs_bg, 'size', inst.size), pos=lambda inst, val: setattr(self.cs_bg, 'pos', inst.pos))
+        self.card_status.bind(size=lambda inst, val: setattr(self.cs_bg, 'size', inst.size),
+                              pos=lambda inst, val: setattr(self.cs_bg, 'pos', inst.pos))
 
-        self.lbl_status_tit = Label(text='EFICIÊNCIA GERAL DA OPERAÇÃO', color=(0.8, 0.8, 0.8, 1), font_size='10sp', bold=True, size_hint_y=None, height='16dp')
-        self.lbl_status_val = Label(text='0.0% Concluído', color=(1.0, 0.82, 0.0, 1), font_size='18sp', bold=True, size_hint_y=None, height='28dp')
-        self.lbl_status_det = Label(text='Aguardando novos registros...', color=(0.7, 0.7, 0.7, 1), font_size='10sp', size_hint_y=None, height='18dp')
+        self.lbl_status_tit = Label(text='EFICIÊNCIA GERAL DA OPERAÇÃO', color=(0.8, 0.8, 0.8, 1), font_size='10sp',
+                                    bold=True, size_hint_y=None, height='16dp')
+        self.lbl_status_val = Label(text='0.0% Concluído', color=(1.0, 0.82, 0.0, 1), font_size='18sp', bold=True,
+                                    size_hint_y=None, height='28dp')
+        self.lbl_status_det = Label(text='Aguardando novos registros...', color=(0.7, 0.7, 0.7, 1), font_size='10sp',
+                                    size_hint_y=None, height='18dp')
 
         self.card_status.add_widget(self.lbl_status_tit)
         self.card_status.add_widget(self.lbl_status_val)
         self.card_status.add_widget(self.lbl_status_det)
         self.content.add_widget(self.card_status)
 
-        lbl_hist_tit = Label(text='REGISTROS RECENTES', color=(1.0, 0.82, 0.0, 1), font_size='12sp', bold=True, size_hint_y=None, height='25dp', halign='left')
+        lbl_hist_tit = Label(text='REGISTROS RECENTES', color=(1.0, 0.82, 0.0, 1), font_size='12sp', bold=True,
+                             size_hint_y=None, height='25dp', halign='left')
         lbl_hist_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
         self.content.add_widget(lbl_hist_tit)
 
@@ -315,18 +297,23 @@ class ReportsScreen(Screen):
         with card.canvas.before:
             Color(0.18, 0.22, 0.28, 1)
             bg = RoundedRectangle(size=card.size, pos=card.pos, radius=[8])
-        card.bind(size=lambda inst, val: setattr(bg, 'size', inst.size), pos=lambda inst, val: setattr(bg, 'pos', inst.pos))
-        lbl_t = Label(text=titulo, color=(0.7, 0.7, 0.7, 1), font_size='9sp', bold=True, size_hint_y=None, height='15dp')
+        card.bind(size=lambda inst, val: setattr(bg, 'size', inst.size),
+                  pos=lambda inst, val: setattr(bg, 'pos', inst.pos))
+        lbl_t = Label(text=titulo, color=(0.7, 0.7, 0.7, 1), font_size='9sp', bold=True, size_hint_y=None,
+                      height='15dp')
         lbl_v = Label(text=valor_inicial, color=cor_borda, font_size='15sp', bold=True, size_hint_y=None, height='25dp')
         card.add_widget(lbl_t)
         card.add_widget(lbl_v)
         return {'layout': card, 'label_valor': lbl_v}
 
     def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
         perfil = obter_perfil_atual()
-        meta = perfil.get("meta_hoje", 720)
-        total = perfil.get("total_produzido_hoje", 0)
-        pct = perfil.get("porcentagem_hoje", 0.0)
+        meta = perfil.get("meta_hoje", 720) if isinstance(perfil, dict) else 720
+        total = perfil.get("total_produzido_hoje", 0) if isinstance(perfil, dict) else 0
+        pct = perfil.get("porcentagem_hoje", 0.0) if isinstance(perfil, dict) else 0.0
 
         self.card_meta['label_valor'].text = f"{meta} un"
         self.card_prod['label_valor'].text = f"{total} un"
@@ -340,9 +327,10 @@ class ReportsScreen(Screen):
             self.lbl_status_det.text = "Status: Abaixo da meta. ❌"
 
         self.historico_container.clear_widgets()
-        historico = perfil.get("historico_salvo", [])
+        historico = perfil.get("historico_salvo", []) if isinstance(perfil, dict) else []
         if not historico:
-            lbl_vazio = Label(text='Nenhum dado registrado ainda.', color=(0.5, 0.5, 0.5, 1), font_size='11sp', size_hint_y=None, height='30dp')
+            lbl_vazio = Label(text='Nenhum dado registrado ainda.', color=(0.5, 0.5, 0.5, 1), font_size='11sp',
+                              size_hint_y=None, height='30dp')
             self.historico_container.add_widget(lbl_vazio)
             self.historico_container.height = 30
         else:
@@ -352,8 +340,10 @@ class ReportsScreen(Screen):
                 with item_box.canvas.before:
                     Color(0.15, 0.18, 0.24, 1)
                     bg_i = RoundedRectangle(size=item_box.size, pos=item_box.pos, radius=[6])
-                item_box.bind(size=lambda inst, val: setattr(bg_i, 'size', inst.size), pos=lambda inst, val: setattr(bg_i, 'pos', inst.pos))
-                lbl_texto = Label(text=str(h), color=(0.9, 0.9, 0.9, 1), font_size='9sp', halign='left', valign='middle')
+                item_box.bind(size=lambda inst, val: setattr(bg_i, 'size', inst.size),
+                              pos=lambda inst, val: setattr(bg_i, 'pos', inst.pos))
+                lbl_texto = Label(text=str(h), color=(0.9, 0.9, 0.9, 1), font_size='9sp', halign='left',
+                                  valign='middle')
                 lbl_texto.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
                 item_box.add_widget(lbl_texto)
                 self.historico_container.add_widget(item_box)
@@ -362,29 +352,19 @@ class ReportsScreen(Screen):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
 
-   #Tela de screen
+
+# ==========================================
+# 4. TELA DE PRODUÇÃO (MENU)
+# ==========================================
 class ProductionScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         main_layout = BoxLayout(orientation='vertical')
 
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA DE INÍCIO!
-
-            # 1. Puxamos a paleta correspondente ao tema salvo (padrao, escuro ou azul)
-            paleta = obter_paleta_atual()
-
-            # 2. Mudamos a cor do fundo (bg_rect) dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # 3. Atualizamos os dados normais do painel
-            self.atualizar_dados_dashboard()
-
         with main_layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
-        main_layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
-                         pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
+        main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
         header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 10])
         with header.canvas.before:
@@ -426,6 +406,10 @@ class ProductionScreen(Screen):
         main_layout.add_widget(CriarBarraNavegacao(ativa='producao'))
         self.add_widget(main_layout)
 
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
@@ -439,24 +423,10 @@ class HxhDetailScreen(Screen):
         super().__init__(**kwargs)
         main_layout = BoxLayout(orientation='vertical')
 
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA DE INÍCIO!
-
-            # 1. Puxamos a paleta correspondente ao tema salvo (padrao, escuro ou azul)
-            paleta = obter_paleta_atual()
-
-            # 2. Mudamos a cor do fundo (bg_rect) dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # 3. Atualizamos os dados normais do painel
-            self.atualizar_dados_dashboard()
-
-
         with main_layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
-        main_layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
-                         pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
+        main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
         header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[10, 5])
         with header.canvas.before:
@@ -485,7 +455,7 @@ class HxhDetailScreen(Screen):
         lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
         perfil_inicial = obter_perfil_atual()
-        meta_inicial = str(perfil_inicial.get("meta_hoje", 720))
+        meta_inicial = str(perfil_inicial.get("meta_hoje", 720) if isinstance(perfil_inicial, dict) else 720)
         self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='14sp', size_hint_y=None,
                                                 height='35dp', halign='center')
 
@@ -501,7 +471,6 @@ class HxhDetailScreen(Screen):
         box_meta_card.add_widget(btn_salvar_meta)
         content.add_widget(box_meta_card)
 
-        # Tabela com Scroll Horizontal seguro
         scroll_horizontal = ScrollView(size_hint_y=None, height='350dp', do_scroll_x=True, do_scroll_y=False)
         tabela_wrapper = BoxLayout(orientation='vertical', size_hint_y=None, size_hint_x=None, width='480dp', spacing=4)
         tabela_wrapper.bind(minimum_height=tabela_wrapper.setter('height'))
@@ -620,12 +589,17 @@ class HxhDetailScreen(Screen):
         main_layout.add_widget(scroll_vertical)
         self.add_widget(main_layout)
 
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
     def aplicar_filtro_meta(self, instance):
         meta_str = self.input_meta_selecionada.text.strip()
         meta_val = 360 if '360' in meta_str else 720
         self.input_meta_selecionada.text = str(meta_val)
         perfil = obter_perfil_atual()
-        perfil["meta_hoje"] = meta_val
+        if isinstance(perfil, dict):
+            perfil["meta_hoje"] = meta_val
         salvar_dados_gerais()
 
         for item in self.linhas_widgets:
@@ -666,27 +640,35 @@ class HxhDetailScreen(Screen):
         self.lbl_total_pos.text = f"Total Positivo: +{total_pos}"
         self.lbl_total_neg.text = f"Total Negativo: -{total_neg}"
         perfil = obter_perfil_atual()
-        perfil["total_produzido_hoje"] = total_prod_geral
-        if meta_atual > 0:
-            perfil["porcentagem_hoje"] = (total_prod_geral / meta_atual) * 100
+        if isinstance(perfil, dict):
+            perfil["total_produzido_hoje"] = total_prod_geral
+            if meta_atual > 0:
+                perfil["porcentagem_hoje"] = (total_prod_geral / meta_atual) * 100
         salvar_dados_gerais()
 
     def salvar_dados(self, instance):
         self.calcular_totais(None)
         perfil = obter_perfil_atual()
-        resumo = f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')} | Meta: {perfil.get('meta_hoje', 720)} | Prod: {perfil.get('total_produzido_hoje', 0)} ({perfil.get('porcentagem_hoje', 0):.1f}%)"
-        if "historico_salvo" not in perfil:
-            perfil["historico_salvo"] = []
-        perfil["historico_salvo"].insert(0, resumo)
-        if len(perfil["historico_salvo"]) > 20:
-            perfil["historico_salvo"].pop()
-        salvar_dados_gerais()
+        if isinstance(perfil, dict):
+            meta = perfil.get('meta_hoje', 720)
+            prod = perfil.get('total_produzido_hoje', 0)
+            pct = perfil.get('porcentagem_hoje', 0.0)
+            resumo = f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')} | Meta: {meta} | Prod: {prod} ({pct:.1f}%)"
+            if "historico_salvo" not in perfil or not isinstance(perfil["historico_salvo"], list):
+                perfil["historico_salvo"] = []
+            perfil["historico_salvo"].insert(0, resumo)
+            if len(perfil["historico_salvo"]) > 20:
+                perfil["historico_salvo"].pop()
+            salvar_dados_gerais()
         Popup(title='Sucesso', content=Label(text='Dados salvos com sucesso!'), size_hint=(0.8, 0.3)).open()
 
     def compartilhar_dados(self, instance):
         self.calcular_totais(None)
         perfil = obter_perfil_atual()
-        texto = f"*RELATÓRIOS MYBAG*\nMeta: {perfil.get('meta_hoje', 720)} | Prod: {perfil.get('total_produzido_hoje', 0)} ({perfil.get('porcentagem_hoje', 0):.1f}%)\n{self.lbl_total_pos.text} | {self.lbl_total_neg.text}"
+        meta = perfil.get('meta_hoje', 720) if isinstance(perfil, dict) else 720
+        prod = perfil.get('total_produzido_hoje', 0) if isinstance(perfil, dict) else 0
+        pct = perfil.get('porcentagem_hoje', 0.0) if isinstance(perfil, dict) else 0.0
+        texto = f"*RELATÓRIOS MYBAG*\nMeta: {meta} | Prod: {prod} ({pct:.1f}%)\n{self.lbl_total_pos.text} | {self.lbl_total_neg.text}"
         Clipboard.copy(texto)
         Popup(title='Compartilhar', content=Label(text='Relatório copiado para a área de transferência!'),
               size_hint=(0.8, 0.3)).open()
@@ -695,28 +677,16 @@ class HxhDetailScreen(Screen):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
 
-# ==========================================
-# 6. TELA DE CONFIGURAÇÕES (MENU DE PREFERÊNCIAS)
-# ==========================================
 
+# ==========================================
+# 6. TELA DE CONFIGURAÇÕES
+# ==========================================
 class ConfigScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical')
-
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA DE INÍCIO!
-
-            # 1. Puxamos a paleta correspondente ao tema salvo (padrao, escuro ou azul)
-            paleta = obter_paleta_atual()
-
-            # 2. Mudamos a cor do fundo (bg_rect) dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # 3. Atualizamos os dados normais do painel
-            self.atualizar_dados_dashboard()
         with layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
         layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
@@ -744,7 +714,6 @@ class ConfigScreen(Screen):
         btn_perfil.font_size = '13sp'
         btn_perfil.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'welcome'))
 
-        # Botão que agora leva para a tela de escolha dos 3 temas
         btn_cores = RoundedButton(text='🎨 Alterar Cores e Tema', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
                                   height='48dp')
         btn_cores.color = (1, 1, 1, 1);
@@ -768,6 +737,10 @@ class ConfigScreen(Screen):
         layout.add_widget(CriarBarraNavegacao(ativa='config'))
         self.add_widget(layout)
 
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
     def acao_notificacoes(self, instance):
         Popup(title='Notificações', content=Label(text='Configurações de alertas ativadas.'),
               size_hint=(0.8, 0.3)).open()
@@ -778,30 +751,14 @@ class ConfigScreen(Screen):
 
 
 # ==========================================
-# TELA DE ESCOLHA DE TEMAS E CORES (3 OPÇÕES)
-# ==========================================
-# ==========================================
-# TELA DE ESCOLHA DE TEMAS E CORES (3 OPÇÕES)
+# 7. TELA DE ESCOLHA DE TEMAS (3 OPÇÕES)
 # ==========================================
 class ThemeScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical')
-
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA DE INÍCIO!
-
-            # 1. Puxamos a paleta correspondente ao tema salvo (padrao, escuro ou azul)
-            paleta = obter_paleta_atual()
-
-            # 2. Mudamos a cor do fundo (bg_rect) dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # 3. Atualizamos os dados normais do painel
-            self.atualizar_dados_dashboard()
-
         with layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
         layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
@@ -829,7 +786,6 @@ class ThemeScreen(Screen):
         lbl_instrucao.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
         content.add_widget(lbl_instrucao)
 
-        # 3 Opções de Temas com Cores Diferentes baseadas na identidade visual
         btn_tema1 = RoundedButton(text='☀️ Tema 1: Bege Clássico (Padrão)', bg_color=(0.96, 0.93, 0.88, 1),
                                   size_hint_y=None, height='50dp')
         btn_tema1.color = (0.12, 0.14, 0.18, 1);
@@ -859,28 +815,34 @@ class ThemeScreen(Screen):
         layout.add_widget(Label())
         self.add_widget(layout)
 
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
     def aplicar_tema(self, nome_tema):
-        # Salva o tema escolhido globalmente no DADOS_APP
-        DADOS_APP["tema_atual"] = nome_tema
+        perfil = obter_perfil_atual()
+        if isinstance(perfil, dict):
+            perfil["tema_atual"] = nome_tema
         salvar_dados_gerais()
 
-        # Mensagem de confirmação
         nomes_amigaveis = {'padrao': 'Bege Clássico', 'escuro': 'Stellantis Dark', 'azul': 'Azul Industrial'}
-        msg = f"Tema '{nomes_amigaveis.get(nome_tema, nome_tema)}' aplicado com sucesso!\nReinicie ou mude de tela para ver a nova cor em todo o app."
+        msg = f"Tema '{nomes_amigaveis.get(nome_tema, nome_tema)}' aplicado!\nMude de tela para atualizar as cores."
         Popup(title='Tema Atualizado', content=Label(text=msg, halign='center'), size_hint=(0.85, 0.35)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
+
+
 # ==========================================
-# 7. TELA DE SUPORTE (APENAS CONTATO)
+# 8. TELA DE SUPORTE
 # ==========================================
 class SupportScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical')
         with layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
         layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
@@ -919,36 +881,24 @@ class SupportScreen(Screen):
         layout.add_widget(CriarBarraNavegacao(ativa='suporte'))
         self.add_widget(layout)
 
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
 
 
 # ==========================================
-# 8. TELA DE TAREFAS / LEITURA QR CODE E CÂMERA
+# 9. TELA DE TAREFAS / LEITURA QR CODE E CÂMERA
 # ==========================================
 class TasksScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation='vertical')
         with layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
-            self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
-
-        def on_enter(self):
-            # ESTE MÉTODO RODA TODA VEZ QUE VOCÊ ENTRA NA TELA DE INÍCIO!
-
-            # 1. Puxamos a paleta correspondente ao tema salvo (padrao, escuro ou azul)
-            paleta = obter_paleta_atual()
-
-            # 2. Mudamos a cor do fundo (bg_rect) dinamicamente com base no tema escolhido
-            self.bg_rect.rgba = paleta['bg']
-
-            # 3. Atualizamos os dados normais do painel
-            self.atualizar_dados_dashboard()
-
-        with layout.canvas.before:
-            Color(0.96, 0.93, 0.88, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=layout.size, pos=layout.pos)
         layout.bind(size=lambda inst, val: setattr(self.bg_rect, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.bg_rect, 'pos', inst.pos))
@@ -1014,9 +964,8 @@ class TasksScreen(Screen):
         self.add_widget(layout)
 
     def on_enter(self):
-        # ADICIONE ESTE MÉTODO PARA O TEMA MUDAR TAMBÉM NESTA TELA!
         paleta = obter_paleta_atual()
-        self.bg_rect.rgba = paleta['bg']
+        self.bg_color.rgba = paleta['bg']
 
     def iniciar_leitura_qr_sequencial(self, instance):
         if has_android:
