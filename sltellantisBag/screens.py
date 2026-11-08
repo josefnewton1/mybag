@@ -454,21 +454,19 @@ class ReportsScreen(Screen):
         self.bg_rect.pos = instance.pos
 #
 # ==========================================
-# 5. TELA DE PRODUÇÃO (REESTRUTURADA - PERDAS E CONTrole PROFISSIONAL)
+# 4. TELA DE PRODUÇÃO (OTIMIZADA PARA CELULAR - SEM SCROLL HORIZONTAL)
 # ==========================================
 class ProductionScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.main_layout = BoxLayout(orientation='vertical')
 
-        # Fundo geral da tela
         with self.main_layout.canvas.before:
-            self.bg_color = Color(0.94, 0.95, 0.97, 1)
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
             self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        # Cabeçalho Superior Fixo
-        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='50dp', padding=[15, 0])
+        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='50dp', padding=[10, 5])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
@@ -480,29 +478,19 @@ class ProductionScreen(Screen):
                   halign='center'))
         self.main_layout.add_widget(header)
 
-        # Corpo com Rolagem
-        scroll_vertical = ScrollView(size_hint=(1, 1), bar_width=4)
+        # Scroll vertical que engloba toda a página
+        scroll_vertical = ScrollView(size_hint=(1, 1))
         content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=10, padding=10)
         content.bind(minimum_height=content.setter('height'))
 
-        # ==========================================
-        # CARD 1: CONFIGURAÇÃO DE TURNO E META
-        # ==========================================
-        card_turno = BoxLayout(orientation='vertical', size_hint_y=None, height='110dp', padding=10, spacing=8)
-        with card_turno.canvas.before:
-            Color(1, 1, 1, 1)
-            self.rect_card1 = Rectangle(size=card_turno.size, pos=card_turno.pos)
-        card_turno.bind(size=lambda inst, val: setattr(self.rect_card1, 'size', inst.size),
-                        pos=lambda inst, val: setattr(self.rect_card1, 'pos', inst.pos))
-
-        lbl_meta_tit = Label(text='⚙️ CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='11sp',
-                             bold=True, halign='left')
+        box_meta_card = BoxLayout(orientation='vertical', size_hint_y=None, height='115dp', padding=6, spacing=6)
+        lbl_meta_tit = Label(text='CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='11sp',
+                             bold=True, halign='center')
         lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        card_turno.add_widget(lbl_meta_tit)
 
         box_turno = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=8)
-        self.btn_turno_1 = Button(text='1º Turno (06:00)', background_color=(0.3, 0.3, 0.3, 1),
-                                  color=(1, 1, 1, 1), bold=True, font_size='10sp')
+        self.btn_turno_1 = Button(text='1º Turno (06:00)', background_color=(0.3, 0.3, 0.3, 1), color=(1, 1, 1, 1),
+                                  bold=True, font_size='10sp')
         self.btn_turno_2 = Button(text='2º Turno (16:00)', background_color=(0.85, 0.65, 0.1, 1),
                                   color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp')
 
@@ -510,16 +498,15 @@ class ProductionScreen(Screen):
         self.btn_turno_2.bind(on_release=lambda x: self.mudar_turno(2))
         box_turno.add_widget(self.btn_turno_1)
         box_turno.add_widget(self.btn_turno_2)
-        card_turno.add_widget(box_turno)
+        box_meta_card.add_widget(box_turno)
 
         box_meta_input = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=8)
         perfil_inicial = obter_perfil_atual()
         meta_inicial = str(perfil_inicial.get("meta_hoje", 720) if isinstance(perfil_inicial, dict) else 720)
+        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='13sp', size_hint_y=None,
+                                                height='32dp', halign='center')
 
-        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='12sp', size_hint_y=None,
-                                                height='32dp', halign='center', hint_text='Meta Total')
-
-        btn_salvar_meta = RoundedButton(text='Aplicar Meta', bg_color=(0.2, 0.5, 0.7, 1), size_hint_y=None,
+        btn_salvar_meta = RoundedButton(text='Aplicar Meta', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
                                         height='32dp')
         btn_salvar_meta.color = (1, 1, 1, 1)
         btn_salvar_meta.font_size = '10sp'
@@ -528,105 +515,89 @@ class ProductionScreen(Screen):
 
         box_meta_input.add_widget(self.input_meta_selecionada)
         box_meta_input.add_widget(btn_salvar_meta)
-        card_turno.add_widget(box_meta_input)
+        box_meta_card.add_widget(box_meta_input)
 
-        content.add_widget(card_turno)
+        content.add_widget(box_meta_card)
 
-        # ==========================================
-        # CARD 2: TABELA HORA A HORA (COM COLUNA PERDAS)
-        # ==========================================
-        card_tabela = BoxLayout(orientation='vertical', size_hint_y=None, height='400dp', padding=8, spacing=5)
-        with card_tabela.canvas.before:
-            Color(1, 1, 1, 1)
-            self.rect_card2 = Rectangle(size=card_tabela.size, pos=card_tabela.pos)
-        card_tabela.bind(size=lambda inst, val: setattr(self.rect_card2, 'size', inst.size),
-                         pos=lambda inst, val: setattr(self.rect_card2, 'pos', inst.pos))
-
-        lbl_tabela_tit = Label(text='📊 ACOMPANHAMENTO HORA A HORA', color=(0.12, 0.14, 0.18, 1), font_size='11sp',
-                               bold=True, halign='left', size_hint_y=None, height='20dp')
-        lbl_tabela_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        card_tabela.add_widget(lbl_tabela_tit)
-
-        scroll_horizontal = ScrollView(size_hint=(1, 1), do_scroll_x=True, do_scroll_y=False)
-        tabela_wrapper = BoxLayout(orientation='vertical', size_hint_y=None, size_hint_x=None, width='480dp', spacing=3)
-        tabela_wrapper.bind(minimum_height=tabela_wrapper.setter('height'))
-
-        # Cabeçalho da Tabela (Alterado Delta -> Perdas)
-        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=2,
-                                      size_hint_x=None, width='480dp')
-        with self.table_header.canvas.before:
-            Color(0.88, 0.90, 0.92, 1)
-            self.rect_th = Rectangle(size=self.table_header.size, pos=self.table_header.pos)
-        self.table_header.bind(size=lambda inst, val: setattr(self.rect_th, 'size', inst.size),
-                               pos=lambda inst, val: setattr(self.rect_th, 'pos', inst.pos))
-
-        colunas = [('HORA', '100dp'), ('Meta', '65dp'), ('Cap.', '65dp'), ('Res.', '80dp'), ('Prod.', '80dp'),
-                   ('Perdas', '80dp')]
-        for nome, largura in colunas:
-            self.table_header.add_widget(
-                Label(text=nome, color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
-                      size_hint_x=None, width=largura))
-        tabela_wrapper.add_widget(self.table_header)
+        # Cabeçalho da Tabela adaptado para encaixar na tela do celular sem rolar para os lados
+        # Larguras otimizadas somando exatamente a largura padrão da tela
+        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=1,
+                                      size_hint_x=1)
+        self.table_header.add_widget(
+            Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
+                  size_hint_x_hint=None, size_hint_x=0.24))
+        self.table_header.add_widget(
+            Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
+                  size_hint_x=0.12))
+        self.table_header.add_widget(
+            Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
+                  size_hint_x=0.12))
+        self.table_header.add_widget(
+            Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
+                  size_hint_x=0.18))
+        self.table_header.add_widget(
+            Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='9sp', halign='center',
+                  size_hint_x=0.17))
+        self.table_header.add_widget(
+            Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
+                  size_hint_x=0.17))
+        content.add_widget(self.table_header)
 
         self.turno_atual = 2
+
         self.dados_turno_2 = [
-            ("16:00-17:00", 100, 100), ("17:00-18:00", 100, 200), ("18:15-19:00", 67, 267),
-            ("19:00-19:15", 19, 286), ("20:15-21:00", 67, 353), ("21:00-22:00", 100, 453),
-            ("22:00-23:00", 100, 553), ("23:15-00:00", 67, 620), ("00:00-01:09", 100, 720),
+            ("16:00-17:00", 100, 100),
+            ("17:00-18:00", 100, 200),
+            ("18:15-19:00", 67, 267),
+            ("19:00-19:15", 19, 286),
+            ("20:15-21:00", 67, 353),
+            ("21:00-22:00", 100, 453),
+            ("22:00-23:00", 100, 553),
+            ("23:15-00:00", 67, 620),
+            ("00:00-01:09", 100, 720),
         ]
+
         self.dados_turno_1 = [
-            ("06:00-07:00", 100, 100), ("07:00-08:00", 100, 200), ("08:15-09:00", 67, 267),
-            ("09:00-09:15", 19, 286), ("10:15-11:00", 67, 353), ("11:00-12:00", 100, 453),
-            ("12:45-13:45", 100, 553), ("13:45-14:30", 67, 620), ("14:30-15:43", 100, 720),
+            ("06:00-07:00", 100, 100),
+            ("07:00-08:00", 100, 200),
+            ("08:15-09:00", 67, 267),
+            ("09:00-09:15", 19, 286),
+            ("10:15-11:00", 67, 353),
+            ("11:00-12:00", 100, 453),
+            ("12:45-13:45", 100, 553),
+            ("13:45-14:30", 67, 620),
+            ("14:30-15:43", 100, 720),
         ]
 
         self.linhas_widgets = []
-        self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=3, size_hint_x=None,
-                                              width='480dp')
+        self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=3, size_hint_x=1)
 
         self.construir_linhas_tabela()
-        tabela_wrapper.add_widget(self.tabela_linhas_layout)
-        scroll_horizontal.add_widget(tabela_wrapper)
-        card_tabela.add_widget(scroll_horizontal)
+        content.add_widget(self.tabela_linhas_layout)
 
-        content.add_widget(card_tabela)
-
-        # ==========================================
-        # CARD 3: PAINEL DE TOTAIS E PERDAS TOTAIS
-        # ==========================================
-        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp', spacing=10, padding=[5, 0])
-        with box_totais.canvas.before:
-            Color(0.90, 0.92, 0.95, 1)
-            self.rect_tot = Rectangle(size=box_totais.size, pos=box_totais.pos)
-        box_totais.bind(size=lambda inst, val: setattr(self.rect_tot, 'size', inst.size),
-                        pos=lambda inst, val: setattr(self.rect_tot, 'pos', inst.pos))
-
+        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp', spacing=10, padding=[0, 2])
         self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='10sp',
                                    halign='center')
-        self.lbl_perdas_totais = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp',
-                                       halign='center')
+        self.lbl_total_neg = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp',
+                                   halign='center')
         box_totais.add_widget(self.lbl_total_pos)
-        box_totais.add_widget(self.lbl_perdas_totais)
+        box_totais.add_widget(self.lbl_total_neg)
         content.add_widget(box_totais)
 
-        # ==========================================
-        # BOTÕES DE AÇÃO RÁPIDA INFERIORES
-        # ==========================================
-        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='42dp', spacing=8)
-
-        btn_calcular = RoundedButton(text='🔄 CALCULAR', bg_color=(0.2, 0.5, 0.7, 1))
+        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='42dp', spacing=6)
+        btn_calcular = RoundedButton(text='CALCULAR', bg_color=(0.25, 0.65, 0.85, 1))
         btn_calcular.color = (1, 1, 1, 1);
         btn_calcular.bold = True;
         btn_calcular.font_size = '10sp'
         btn_calcular.bind(on_release=self.calcular_totais)
 
-        btn_salvar = RoundedButton(text='💾 SALVAR', bg_color=(0.2, 0.6, 0.3, 1))
+        btn_salvar = RoundedButton(text='SALVAR', bg_color=(0.25, 0.7, 0.4, 1))
         btn_salvar.color = (1, 1, 1, 1);
         btn_salvar.bold = True;
         btn_salvar.font_size = '10sp'
         btn_salvar.bind(on_release=self.salvar_dados)
 
-        btn_compartilhar = RoundedButton(text='📤 WHATSAPP', bg_color=(0.85, 0.55, 0.1, 1))
+        btn_compartilhar = RoundedButton(text='WHATSAPP', bg_color=(0.9, 0.6, 0.2, 1))
         btn_compartilhar.color = (1, 1, 1, 1);
         btn_compartilhar.bold = True;
         btn_compartilhar.font_size = '10sp'
@@ -665,25 +636,23 @@ class ProductionScreen(Screen):
         dados_ativos = self.dados_turno_1 if self.turno_atual == 1 else self.dados_turno_2
 
         for hora, h720_meta, h720_cap in dados_ativos:
-            row = BoxLayout(orientation='horizontal', size_hint_y=None, height='34dp', spacing=2, size_hint_x=None,
-                            width='480dp')
+            row = BoxLayout(orientation='horizontal', size_hint_y=None, height='34dp', spacing=1, size_hint_x=1)
 
-            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center', size_hint_x=None,
-                          width='100dp')
-            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='10sp', bold=True,
-                            halign='center', size_hint_x=None, width='65dp')
-            lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center',
-                            size_hint_x=None, width='65dp')
-            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='11sp', halign='center',
-                                size_hint_x=None, width='80dp')
-            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
-                             size_hint_x=None, width='80dp')
-            lbl_perda = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
-                              size_hint_x=None, width='80dp')
+            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='8.5sp', halign='center', size_hint_x=0.24)
+            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', bold=True,
+                            halign='center', size_hint_x=0.12)
+            lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', halign='center',
+                            size_hint_x=0.12)
+            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='10sp', halign='center',
+                                size_hint_x=0.18)
+            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center',
+                             size_hint_x=0.17)
+            lbl_delta = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center',
+                              size_hint_x=0.17)
 
             linha_info = {
                 'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
-                'txt_res': txt_res, 'lbl_prod': lbl_prod, 'lbl_perda': lbl_perda,
+                'txt_res': txt_res, 'lbl_prod': lbl_prod, 'lbl_delta': lbl_delta,
                 'base_meta': h720_meta, 'base_cap': h720_cap
             }
             txt_res.bind(text=lambda inst, val: self.calcular_totais(None))
@@ -693,7 +662,7 @@ class ProductionScreen(Screen):
             row.add_widget(lbl_cap)
             row.add_widget(txt_res)
             row.add_widget(lbl_prod)
-            row.add_widget(lbl_perda)
+            row.add_widget(lbl_delta)
 
             self.linhas_widgets.append(linha_info)
             self.tabela_linhas_layout.add_widget(row)
@@ -727,8 +696,9 @@ class ProductionScreen(Screen):
     def calcular_totais(self, instance):
         total_prod_geral = 0
         total_pos = 0
-        total_perdas = 0
+        total_neg = 0
         meta_atual = int(self.input_meta_selecionada.text.strip() or 720)
+
         acumulado_anterior = 0
 
         for i, item in enumerate(self.linhas_widgets):
@@ -737,6 +707,7 @@ class ProductionScreen(Screen):
 
             if txt.isdigit():
                 res_atual = int(txt)
+
                 if i == 0:
                     prod_intervalo = res_atual
                 else:
@@ -745,25 +716,24 @@ class ProductionScreen(Screen):
                 item['lbl_prod'].text = str(prod_intervalo)
                 total_prod_geral = res_atual
 
-                # Perdas / Delta da linha (Produção do intervalo menos a meta da hora)
                 delta = prod_intervalo - meta_hora
-                item['lbl_perda'].text = str(delta) if delta < 0 else f"+{delta}"
+                item['lbl_delta'].text = str(delta) if delta < 0 else f"+{delta}"
 
                 if delta >= 0:
-                    item['lbl_perda'].color = (0, 0.5, 0, 1)
+                    item['lbl_delta'].color = (0, 0.5, 0, 1)
                     total_pos += delta
                 else:
-                    item['lbl_perda'].color = (0.8, 0, 0, 1)
-                    total_perdas += abs(delta)
+                    item['lbl_delta'].color = (0.8, 0, 0, 1)
+                    total_neg += abs(delta)
 
                 acumulado_anterior = res_atual
             else:
                 item['lbl_prod'].text = "0"
-                item['lbl_perda'].text = "0"
-                item['lbl_perda'].color = (0.5, 0.5, 0.5, 1)
+                item['lbl_delta'].text = "0"
+                item['lbl_delta'].color = (0.5, 0.5, 0.5, 1)
 
         self.lbl_total_pos.text = f"Positivo: +{total_pos}"
-        self.lbl_perdas_totais.text = f"Perdas Totais: -{total_perdas}"
+        self.lbl_total_neg.text = f"Perdas Totais: -{total_neg}"
 
         perfil = obter_perfil_atual()
         if isinstance(perfil, dict):
@@ -790,51 +760,65 @@ class ProductionScreen(Screen):
         Popup(title='Sucesso', content=Label(text='Dados salvos com sucesso!'), size_hint=(0.8, 0.3)).open()
 
     def compartilhar_dados(self, instance):
-        from kivy.utils import platform
         self.calcular_totais(None)
         perfil = obter_perfil_atual()
-        meta = perfil.get('meta_hoje', 720) if isinstance(perfil, dict) else 720
-        prod = perfil.get('total_produzido_hoje', 0) if isinstance(perfil, dict) else 0
-        pct = perfil.get('porcentagem_hoje', 0.0) if isinstance(perfil, dict) else 0.0
+        meta_total = int(perfil.get('meta_hoje', 720) if isinstance(perfil, dict) else 720)
+        prod_total = int(perfil.get('total_produzido_hoje', 0) if isinstance(perfil, dict) else 0)
         turno_nome = "1º Turno" if self.turno_atual == 1 else "2º Turno"
 
-        texto = f"*RELATÓRIOS MYBAG ({turno_nome})*\nMeta: {meta} | Prod: {prod} ({pct:.1f}%)\n{self.lbl_total_pos.text} | {self.lbl_perdas_totais.text}"
+        detalhes_linhas = ""
+        total_perdas = 0
 
-        abriu_whatsapp = False
-        if platform == 'android':
-            try:
-                import jnius
-                from jnius import autoclass
-                Intent = autoclass('android.content.Intent')
-                String = autoclass('java.lang.String')
-                intent = Intent(Intent.ACTION_SEND)
-                intent.setType("text/plain")
-                intent.setPackage("com.whatsapp")
-                intent.putExtra(Intent.EXTRA_TEXT, String(texto))
-                PythonActivity = autoclass('org.kivy.android.PythonActivity')
-                currentActivity = PythonActivity.mActivity
-                currentActivity.startActivity(intent)
-                abriu_whatsapp = True
-            except Exception as e:
-                print(f"Erro ao abrir o WhatsApp nativo: {e}")
+        for item in self.linhas_widgets:
+            hora = item['lbl_h'].text
+            meta_hora = int(item['lbl_hxh'].text)
+            txt_res = item['txt_res'].text.strip()
 
-        if not abriu_whatsapp:
-            try:
-                import urllib.parse
-                import webbrowser
-                texto_codificado = urllib.parse.quote(texto)
-                webbrowser.open(f"https://api.whatsapp.com/send?text={texto_codificado}")
-            except Exception:
-                pass
+            if txt_res.isdigit():
+                prod_intervalo = int(item['lbl_prod'].text)
+                status_emoji = "✅" if prod_intervalo >= meta_hora else "❌"
+                detalhes_linhas += f"*{hora}*={meta_hora}/{prod_intervalo}{status_emoji}\n"
+                delta = prod_intervalo - meta_hora
+                if delta < 0:
+                    total_perdas += abs(delta)
+            else:
+                detalhes_linhas += f"*{hora}*={meta_hora}/\n"
+
+        ope_calculado = (prod_total / meta_total * 100) if meta_total > 0 else 0.0
+
+        texto = (
+            f"*RELATÓRIOS MYBAG ({turno_nome})*\n\n"
+            f"*226 portas anterior {turno_nome.lower()}*\n\n"
+            f"*Previsto/Realizado*\n"
+            f"{detalhes_linhas}\n"
+            f"Refeição 🍽️\n\n"
+            f"-------Fechamento----\n\n"
+            f"*Produção prevista*: {meta_total}\n"
+            f"*Produção realizada*: {prod_total}\n"
+            f"Produção reportada: {prod_total}\n"
+            f"*OPE*: {ope_calculado:.1f}%\n\n"
+            f"SEMANAL:%\n"
+            f"Perdas: -{total_perdas}\n"
+            f"Motivo : "
+        )
 
         Clipboard.copy(texto)
-        Popup(title='Compartilhar', content=Label(text='Relatório pronto e copiado para a área de transferência!'),
+
+        try:
+            import urllib.parse
+            import webbrowser
+            numero_whatsapp = "5581996974723"
+            texto_codificado = urllib.parse.quote(texto)
+            webbrowser.open(f"https://wa.me/{numero_whatsapp}?text={texto_codificado}")
+        except Exception:
+            pass
+
+        Popup(title='Compartilhar', content=Label(text='Relatório formatado e pronto para o WhatsApp!'),
               size_hint=(0.8, 0.3)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
 # ==========================================
 # 6. TELA DE CONFIGURAÇÕES
 # ==========================================
