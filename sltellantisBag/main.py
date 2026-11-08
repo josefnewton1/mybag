@@ -1,6 +1,6 @@
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
-from screens import WelcomeScreen, HomeScreen, ReportsScreen, ProductionScreen,  TasksScreen, SupportScreen, ConfigScreen, ThemeScreen, UserProfileScreen
+from screens import WelcomeScreen, HomeScreen, ReportsScreen, ProductionScreen,  TasksScreen, SupportScreen, ConfigScreen, ThemeScreen, UserProfileScreen, ChecagemScreen
 
 class MyBagApp(App):
     def build(self):
@@ -16,6 +16,7 @@ class MyBagApp(App):
         self.sm.add_widget(SupportScreen(name='suporte'))
         self.sm.add_widget(UserProfileScreen(name='user_profile'))
         self.sm.current = 'welcome'
+        self.sm.add_widget(ChecagemScreen(name='checagem'))
         return self.sm
 
 if __name__ == '__main__':

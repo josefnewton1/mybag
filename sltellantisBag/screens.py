@@ -12,6 +12,7 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
+from kivy.utils import platform
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
@@ -224,100 +225,98 @@ class WelcomeScreen(Screen):
 
 
 # ==========================================
-# 2. TELA DE INÍCIO (PAINEL DE CONTROLE)
+# 2. TELA DE INÍCIO (PAINEL PRINCIPAL PROFISSIONAL)
 # ==========================================
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.main_layout = BoxLayout(orientation='vertical')
+
         with self.main_layout.canvas.before:
             self.bg_color = Color(0.96, 0.93, 0.88, 1)
-            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.size)
+            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 10])
+        # Cabeçalho Superior Profissional
+        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 5])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
         header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+
         header.add_widget(
-            Label(text='PAINEL DE CONTROLE - MYBAG', color=(1.0, 0.82, 0.0, 1), font_size='16sp', bold=True,
-                  halign='center'))
+            Label(text='STELLANTISBAG - INÍCIO', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True, halign='left'))
         self.main_layout.add_widget(header)
 
-        scroll = ScrollView()
-        self.content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=14, padding=14)
-        self.content.bind(minimum_height=self.content.setter('height'))
+        # Scroll vertical para garantir fluidez em qualquer celular
+        scroll = ScrollView(size_hint=(1, 1))
+        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=15, padding=16)
+        content.bind(minimum_height=content.setter('height'))
 
-        data_atual = datetime.now().strftime('%A, %d de %B, %Y')
-        lbl_data = Label(text=f'Hoje: {data_atual}', color=(0.4, 0.3, 0.2, 1), font_size='12sp', bold=True,
-                         size_hint_y=None, height='22dp', halign='center')
-        lbl_data.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        self.content.add_widget(lbl_data)
+        # Card de Boas-Vindas e Resumo do Perfil
+        card_resumo = BoxLayout(orientation='vertical', size_hint_y=None, height='130dp', padding=14, spacing=8)
+        with card_resumo.canvas.before:
+            Color(0.18, 0.22, 0.28, 1)
+            self.bg_card = RoundedRectangle(size=card_resumo.size, pos=card_resumo.pos, radius=[12])
+        card_resumo.bind(size=lambda inst, val: setattr(self.bg_card, 'size', inst.size),
+                         pos=lambda inst, val: setattr(self.bg_card, 'pos', inst.pos))
 
-        card_perfil = BoxLayout(orientation='horizontal', size_hint_y=None, height='95dp', padding=12, spacing=15)
-        with card_perfil.canvas.before:
-            Color(1, 1, 1, 1)
-            self.p_bg = RoundedRectangle(size=card_perfil.size, pos=card_perfil.pos, radius=[14])
-        card_perfil.bind(size=lambda inst, val: setattr(self.p_bg, 'size', inst.size),
-                         pos=lambda inst, val: setattr(self.p_bg, 'pos', inst.pos))
+        perfil = obter_perfil_atual()
+        nome_usuario = perfil.get('nome', 'Josef Newton') if isinstance(perfil, dict) else 'Josef Newton'
+        meta_hoje = perfil.get('meta_hoje', 720) if isinstance(perfil, dict) else 720
+        prod_hoje = perfil.get('total_produzido_hoje', 0) if isinstance(perfil, dict) else 0
 
-        self.avatar_perfil = CircularAvatar(size=('75dp', '75dp'))
-        box_avatar_wrapper = BoxLayout(size_hint_x=None, width='75dp')
-        box_avatar_wrapper.add_widget(self.avatar_perfil)
-        card_perfil.add_widget(box_avatar_wrapper)
+        lbl_user = Label(text=f'👤 Olá, {nome_usuario}', color=(1.0, 0.82, 0.0, 1), font_size='14sp', bold=True,
+                         halign='left')
+        lbl_user.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
-        box_user_info = BoxLayout(orientation='vertical', spacing=4, padding=[10, 10, 0, 0])
-        self.lbl_nome = Label(text='Bom dia!', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='16sp', halign='left',
-                              valign='middle')
-        self.lbl_nome.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        lbl_cargo = Label(text='Multiplicador - 2° Turno', color=(0.5, 0.4, 0.3, 1), font_size='13sp', halign='left',
-                          valign='middle')
-        lbl_cargo.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        box_user_info.add_widget(self.lbl_nome)
-        box_user_info.add_widget(lbl_cargo)
-        card_perfil.add_widget(box_user_info)
-        self.content.add_widget(card_perfil)
+        lbl_status = Label(text=f'Meta Atual: {meta_hoje} | Produzido: {prod_hoje}', color=(1, 1, 1, 1),
+                           font_size='12sp', halign='left')
+        lbl_status.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
-        card_prod = BoxLayout(orientation='vertical', size_hint_y=None, height='105dp', padding=12, spacing=6)
-        with card_prod.canvas.before:
-            Color(1, 1, 1, 1)
-            self.prod_bg = RoundedRectangle(size=card_prod.size, pos=card_prod.pos, radius=[14])
-        card_prod.bind(size=lambda inst, val: setattr(self.prod_bg, 'size', inst.size),
-                       pos=lambda inst, val: setattr(self.prod_bg, 'pos', inst.pos))
+        lbl_linha = Label(text='📍 Setor: Montagem de Chicotes Elétricos', color=(0.8, 0.8, 0.8, 1), font_size='11sp',
+                          halign='left')
+        lbl_linha.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
-        lbl_prod_title = Label(text='PRODUÇÃO TOTAL DO DIA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='12sp',
-                               halign='center')
-        lbl_prod_title.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        self.lbl_prod_val = Label(text='0 UNIDADES PRODUZIDAS / META 720', color=(0.7, 0.5, 0.0, 1), bold=True,
-                                  font_size='13sp', halign='center')
-        self.lbl_prod_val.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        self.lbl_prod_pct = Label(text='0.0% Concluído ❌', color=(0.8, 0.2, 0.2, 1), font_size='12sp', halign='center')
-        self.lbl_prod_pct.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        card_prod.add_widget(lbl_prod_title)
-        card_prod.add_widget(self.lbl_prod_val)
-        card_prod.add_widget(self.lbl_prod_pct)
-        self.content.add_widget(card_prod)
+        card_resumo.add_widget(lbl_user)
+        card_resumo.add_widget(lbl_status)
+        card_resumo.add_widget(lbl_linha)
+        content.add_widget(card_resumo)
 
-        lbl_acoes = Label(text='AÇÕES RÁPIDAS', color=(0.4, 0.3, 0.2, 1), font_size='12sp', bold=True, size_hint_y=None,
-                          height='24dp', halign='left')
-        lbl_acoes.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        self.content.add_widget(lbl_acoes)
+        # Seção de Ações Principais (Botões lado a lado: Registrar e Dashboard)
+        lbl_sec_acoes = Label(text='Ações Rápidas', color=(0.12, 0.14, 0.18, 1), font_size='13sp', bold=True,
+                              size_hint_y=None, height='25dp', halign='left')
+        lbl_sec_acoes.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        content.add_widget(lbl_sec_acoes)
 
-        btn_ir_producao = Button(text='+ REGISTRAR PRODUÇÃO', size_hint_y=None, height='45dp',
-                                 background_color=(1.0, 0.82, 0.0, 1), color=(0.12, 0.14, 0.18, 1), bold=True,
-                                 font_size='14sp')
-        btn_ir_producao.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'producao'))
-        self.content.add_widget(btn_ir_producao)
+        box_botoes_principais = BoxLayout(orientation='horizontal', size_hint_y=None, height='50dp', spacing=10)
 
-        btn_ir_relatorios = Button(text='📊 VER DASHBOARD DE RELATÓRIOS', size_hint_y=None, height='45dp',
-                                   background_color=(0.18, 0.22, 0.28, 1), color=(1.0, 0.82, 0.0, 1), bold=True,
-                                   font_size='13sp')
-        btn_ir_relatorios.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'relatorios'))
-        self.content.add_widget(btn_ir_relatorios)
+        btn_registrar = RoundedButton(text='📝 REGISTRAR', bg_color=(0.25, 0.65, 0.85, 1))
+        btn_registrar.color = (1, 1, 1, 1);
+        btn_registrar.bold = True;
+        btn_registrar.font_size = '12sp'
+        btn_registrar.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'producao'))
 
-        scroll.add_widget(self.content)
+        btn_dashboard = RoundedButton(text='📊 DASHBOARD', bg_color=(0.25, 0.7, 0.4, 1))
+        btn_dashboard.color = (1, 1, 1, 1);
+        btn_dashboard.bold = True;
+        btn_dashboard.font_size = '12sp'
+        btn_dashboard.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'relatorios'))
+
+        box_botoes_principais.add_widget(btn_registrar)
+        box_botoes_principais.add_widget(btn_dashboard)
+        content.add_widget(box_botoes_principais)
+
+        # Botão de Checagem direcionando para a tela 'checagem'
+        btn_checagem = RoundedButton(text='📷 CHECAGEM', bg_color=(0.9, 0.6, 0.2, 1), size_hint_y=None, height='48dp')
+        btn_checagem.color = (1, 1, 1, 1);
+        btn_checagem.bold = True;
+        btn_checagem.font_size = '12sp'
+        btn_checagem.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'checagem'))
+        content.add_widget(btn_checagem)
+
+        scroll.add_widget(content)
         self.main_layout.add_widget(scroll)
         self.main_layout.add_widget(CriarBarraNavegacao(ativa='inicio'))
         self.add_widget(self.main_layout)
@@ -325,24 +324,13 @@ class HomeScreen(Screen):
     def on_enter(self):
         paleta = obter_paleta_atual()
         self.bg_color.rgba = paleta['bg']
-        self.atualizar_dados_dashboard()
 
     def atualizar_dados_dashboard(self):
-        perfil = obter_perfil_atual()
-        self.lbl_nome.text = f'Bom dia, {DADOS_APP.get("usuario_atual", "Nilton")}!'
-        caminho_foto = perfil.get("foto_path", "") if isinstance(perfil, dict) else ""
-        self.avatar_perfil.atualizar_imagem(caminho_foto)
-        total = perfil.get("total_produzido_hoje", 0) if isinstance(perfil, dict) else 0
-        meta = perfil.get("meta_hoje", 720) if isinstance(perfil, dict) else 720
-        pct = perfil.get("porcentagem_hoje", 0.0) if isinstance(perfil, dict) else 0.0
-        self.lbl_prod_val.text = f'{total} UNIDADES PRODUZIDAS / META {meta}'
-        emoji = "🟢" if pct >= 100 else "⚠️" if pct >= 80 else "❌"
-        self.lbl_prod_pct.text = f'{pct:.1f}% Concluído {emoji}'
+        pass
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
 # ==========================================
 # 3. TELA DE DASHBOARD DE RELATÓRIOS SIMPLIFICADA
 # ==========================================
@@ -938,9 +926,7 @@ class ThemeScreen(Screen):
         self.bg_rect.pos = instance.pos
 
 
-# ==========================================
-# 8. TELA DE SUPORTE
-# ==========================================
+
 # 7. TELA DE SUPORTE
 # ==========================================
 class SupportScreen(Screen):
@@ -1118,6 +1104,267 @@ class TasksScreen(Screen):
     def checar_dados_qr(self, instance):
         Popup(title='Checagem', content=Label(text='Checando dados dos QR Codes capturados...'),
               size_hint=(0.8, 0.3)).open()
+
+    def _update_bg(self, instance, value):
+        self.bg_rect.size = instance.size
+        self.bg_rect.pos = instance.pos
+
+        # ==========================================
+        # 8. TELA DE CHECAGEM (DUPLO QR CODE / SCAN)
+        # ==========================================
+        class ChecagemScreen(Screen):
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                self.main_layout = BoxLayout(orientation='vertical')
+
+                with self.main_layout.canvas.before:
+                    self.bg_color = Color(0.96, 0.93, 0.88, 1)
+                    self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
+                self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
+
+                # Cabeçalho
+                header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 5])
+                with header.canvas.before:
+                    Color(0.12, 0.14, 0.18, 1)
+                    self.header_bg = Rectangle(size=header.size, pos=header.size)
+                header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
+                            pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+
+                header.add_widget(
+                    Label(text='CHECAGEM DE QR CODE', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True,
+                          halign='center'))
+                self.main_layout.add_widget(header)
+
+                scroll = ScrollView(size_hint=(1, 1))
+                content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=15, padding=20)
+                content.bind(minimum_height=content.setter('height'))
+
+                # --- PRIMEIRO BLOCO (QR CODE 1) ---
+                lbl_bloco1 = Label(text='Primeira Leitura', color=(0.12, 0.14, 0.18, 1), font_size='13sp', bold=True,
+                                   size_hint_y=None, height='20dp', halign='left')
+                lbl_bloco1.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+                content.add_widget(lbl_bloco1)
+
+                self.btn_scan_1 = RoundedButton(text='📷 Escanear QR Code 1', bg_color=(0.25, 0.65, 0.85, 1),
+                                                size_hint_y=None, height='45dp')
+                self.btn_scan_1.color = (1, 1, 1, 1);
+                self.btn_scan_1.bold = True;
+                self.btn_scan_1.font_size = '12sp'
+                self.btn_scan_1.bind(on_release=lambda x: self.abrir_scanner(1))
+                content.add_widget(self.btn_scan_1)
+
+                self.input_resultado_1 = TextInput(
+                    text='', hint_text='O código 1 aparecerá aqui...', multiline=False,
+                    font_size='12sp', size_hint_y=None, height='42dp', halign='center'
+                )
+                content.add_widget(self.input_resultado_1)
+
+                # --- SEGUNDO BLOCO (QR CODE 2) ---
+                lbl_bloco2 = Label(text='Segunda Leitura', color=(0.12, 0.14, 0.18, 1), font_size='13sp', bold=True,
+                                   size_hint_y=None, height='20dp', halign='left')
+                lbl_bloco2.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+                content.add_widget(lbl_bloco2)
+
+                self.btn_scan_2 = RoundedButton(text='📷 Escanear QR Code 2', bg_color=(0.25, 0.65, 0.85, 1),
+                                                size_hint_y=None, height='45dp')
+                self.btn_scan_2.color = (1, 1, 1, 1);
+                self.btn_scan_2.bold = True;
+                self.btn_scan_2.font_size = '12sp'
+                self.btn_scan_2.bind(on_release=lambda x: self.abrir_scanner(2))
+                content.add_widget(self.btn_scan_2)
+
+                self.input_resultado_2 = TextInput(
+                    text='', hint_text='O código 2 aparecerá aqui...', multiline=False,
+                    font_size='12sp', size_hint_y=None, height='42dp', halign='center'
+                )
+                content.add_widget(self.input_resultado_2)
+
+                # --- BOTÃO CHECAR ---
+                btn_checar = RoundedButton(text='✅ CHECAR', bg_color=(0.25, 0.7, 0.4, 1), size_hint_y=None,
+                                           height='50dp')
+                btn_checar.color = (1, 1, 1, 1);
+                btn_checar.bold = True;
+                btn_checar.font_size = '14sp'
+                btn_checar.bind(on_release=self.realizar_checagem)
+                content.add_widget(btn_checar)
+
+                scroll.add_widget(content)
+                self.main_layout.add_widget(scroll)
+                self.main_layout.add_widget(CriarBarraNavegacao(ativa='inicio'))
+                self.add_widget(self.main_layout)
+
+            def on_enter(self):
+                paleta = obter_paleta_atual()
+                self.bg_color.rgba = paleta['bg']
+
+            def abrir_scanner(self, qual_botao):
+                if platform == 'android':
+                    try:
+                        from jnius import autoclass
+                        Intent = autoclass('android.content.Intent')
+                        intent = Intent("com.google.zxing.client.android.SCAN")
+                        intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
+                        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                        activity = PythonActivity.mActivity
+                        activity.startActivityForResult(intent, qual_botao)
+                    except Exception as e:
+                        if qual_botao == 1:
+                            self.input_resultado_1.text = f"Erro: {e}"
+                        else:
+                            self.input_resultado_2.text = f"Erro: {e}"
+                else:
+                    # Simulador para testes no PC
+                    if qual_botao == 1:
+                        self.input_resultado_1.text = "QR_TESTE_CHICOTE_A"
+                    else:
+                        self.input_resultado_2.text = "QR_TESTE_CHICOTE_B"
+
+                    Popup(
+                        title=f'Simulador QR Code {qual_botao}',
+                        content=Label(text=f'Código {qual_botao} simulado com sucesso no PC!'),
+                        size_hint=(0.8, 0.3)
+                    ).open()
+
+            def realizar_checagem(self, instance):
+                c1 = self.input_resultado_1.text.strip()
+                c2 = self.input_resultado_2.text.strip()
+
+                if not c1 or not c2:
+                    msg = "Por favor, preencha ou escaneie os dois códigos antes de checar!"
+                else:
+                    msg = f"Checagem realizada com sucesso!\nCódigo 1: {c1}\nCódigo 2: {c2}"
+
+                Popup(title='Resultado da Checagem', content=Label(text=msg), size_hint=(0.8, 0.3)).open()
+
+            def _update_bg(self, instance, value):
+                self.bg_rect.size = instance.size
+                self.bg_rect.pos = instance.pos
+
+
+# ==========================================
+# 8. TELA DE CHECAGEM (DUPLO QR CODE / SCAN)
+# ==========================================
+class ChecagemScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.main_layout = BoxLayout(orientation='vertical')
+
+        with self.main_layout.canvas.before:
+            self.bg_color = Color(0.96, 0.93, 0.88, 1)
+            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
+        self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
+
+        # Cabeçalho
+        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 5])
+        with header.canvas.before:
+            Color(0.12, 0.14, 0.18, 1)
+            self.header_bg = Rectangle(size=header.size, pos=header.size)
+        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
+                    pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+
+        header.add_widget(
+            Label(text='CHECAGEM DE QR CODE', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True, halign='center'))
+        self.main_layout.add_widget(header)
+
+        scroll = ScrollView(size_hint=(1, 1))
+        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=15, padding=20)
+        content.bind(minimum_height=content.setter('height'))
+
+        # --- PRIMEIRO BLOCO (QR CODE 1) ---
+        lbl_bloco1 = Label(text='Primeira Leitura', color=(0.12, 0.14, 0.18, 1), font_size='13sp', bold=True,
+                           size_hint_y=None, height='20dp', halign='left')
+        lbl_bloco1.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        content.add_widget(lbl_bloco1)
+
+        self.btn_scan_1 = RoundedButton(text='📷 Escanear QR Code 1', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
+                                        height='45dp')
+        self.btn_scan_1.color = (1, 1, 1, 1);
+        self.btn_scan_1.bold = True;
+        self.btn_scan_1.font_size = '12sp'
+        self.btn_scan_1.bind(on_release=lambda x: self.abrir_scanner(1))
+        content.add_widget(self.btn_scan_1)
+
+        self.input_resultado_1 = TextInput(
+            text='', hint_text='O código 1 aparecerá aqui...', multiline=False,
+            font_size='12sp', size_hint_y=None, height='42dp', halign='center'
+        )
+        content.add_widget(self.input_resultado_1)
+
+        # --- SEGUNDO BLOCO (QR CODE 2) ---
+        lbl_bloco2 = Label(text='Segunda Leitura', color=(0.12, 0.14, 0.18, 1), font_size='13sp', bold=True,
+                           size_hint_y=None, height='20dp', halign='left')
+        lbl_bloco2.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        content.add_widget(lbl_bloco2)
+
+        self.btn_scan_2 = RoundedButton(text='📷 Escanear QR Code 2', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
+                                        height='45dp')
+        self.btn_scan_2.color = (1, 1, 1, 1);
+        self.btn_scan_2.bold = True;
+        self.btn_scan_2.font_size = '12sp'
+        self.btn_scan_2.bind(on_release=lambda x: self.abrir_scanner(2))
+        content.add_widget(self.btn_scan_2)
+
+        self.input_resultado_2 = TextInput(
+            text='', hint_text='O código 2 aparecerá aqui...', multiline=False,
+            font_size='12sp', size_hint_y=None, height='42dp', halign='center'
+        )
+        content.add_widget(self.input_resultado_2)
+
+        # --- BOTÃO CHECAR ---
+        btn_checar = RoundedButton(text='✅ CHECAR', bg_color=(0.25, 0.7, 0.4, 1), size_hint_y=None, height='50dp')
+        btn_checar.color = (1, 1, 1, 1);
+        btn_checar.bold = True;
+        btn_checar.font_size = '14sp'
+        btn_checar.bind(on_release=self.realizar_checagem)
+        content.add_widget(btn_checar)
+
+        scroll.add_widget(content)
+        self.main_layout.add_widget(scroll)
+        self.main_layout.add_widget(CriarBarraNavegacao(ativa='inicio'))
+        self.add_widget(self.main_layout)
+
+    def on_enter(self):
+        paleta = obter_paleta_atual()
+        self.bg_color.rgba = paleta['bg']
+
+    def abrir_scanner(self, qual_botao):
+        if platform == 'android':
+            try:
+                from jnius import autoclass
+                Intent = autoclass('android.content.Intent')
+                intent = Intent("com.google.zxing.client.android.SCAN")
+                intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                activity = PythonActivity.mActivity
+                activity.startActivityForResult(intent, qual_botao)
+            except Exception as e:
+                if qual_botao == 1:
+                    self.input_resultado_1.text = f"Erro: {e}"
+                else:
+                    self.input_resultado_2.text = f"Erro: {e}"
+        else:
+            # Simulador para testes no PC
+            if qual_botao == 1:
+                self.input_resultado_1.text = "QR_TESTE_CHICOTE_A"
+            else:
+                self.input_resultado_2.text = "QR_TESTE_CHICOTE_B"
+
+            Popup(
+                title=f'Simulador QR Code {qual_botao}',
+                content=Label(text=f'Código {qual_botao} simulado com sucesso no PC!'),
+                size_hint=(0.8, 0.3)
+            ).open()
+
+    def realizar_checagem(self, instance):
+        c1 = self.input_resultado_1.text.strip()
+        c2 = self.input_resultado_2.text.strip()
+
+        if not c1 or not c2:
+            msg = "Por favor, preencha ou escaneie os dois códigos antes de checar!"
+        else:
+            msg = f"Checagem realizada com sucesso!\nCódigo 1: {c1}\nCódigo 2: {c2}"
+
+        Popup(title='Resultado da Checagem', content=Label(text=msg), size_hint=(0.8, 0.3)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
