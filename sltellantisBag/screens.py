@@ -453,8 +453,8 @@ class ReportsScreen(Screen):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
 #
-# ==========================================
-# 4. TELA DE PRODUÇÃO (OTIMIZADA PARA CELULAR - SEM SCROLL HORIZONTAL)
+## ==========================================
+# 4. TELA DE PRODUÇÃO (CORrigida)
 # ==========================================
 class ProductionScreen(Screen):
     def __init__(self, **kwargs):
@@ -470,29 +470,22 @@ class ProductionScreen(Screen):
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
-        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
-                    pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size), pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
 
-        header.add_widget(
-            Label(text='PAINEL DE CONTROLE - PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='13sp', bold=True,
-                  halign='center'))
+        header.add_widget(Label(text='PAINEL DE CONTROLE - PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='13sp', bold=True, halign='center'))
         self.main_layout.add_widget(header)
 
-        # Scroll vertical que engloba toda a página
         scroll_vertical = ScrollView(size_hint=(1, 1))
         content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=10, padding=10)
         content.bind(minimum_height=content.setter('height'))
 
         box_meta_card = BoxLayout(orientation='vertical', size_hint_y=None, height='115dp', padding=6, spacing=6)
-        lbl_meta_tit = Label(text='CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='11sp',
-                             bold=True, halign='center')
+        lbl_meta_tit = Label(text='CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='11sp', bold=True, halign='center')
         lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
         box_turno = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=8)
-        self.btn_turno_1 = Button(text='1º Turno (06:00)', background_color=(0.3, 0.3, 0.3, 1), color=(1, 1, 1, 1),
-                                  bold=True, font_size='10sp')
-        self.btn_turno_2 = Button(text='2º Turno (16:00)', background_color=(0.85, 0.65, 0.1, 1),
-                                  color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp')
+        self.btn_turno_1 = Button(text='1º Turno (06:00)', background_color=(0.3, 0.3, 0.3, 1), color=(1, 1, 1, 1), bold=True, font_size='10sp')
+        self.btn_turno_2 = Button(text='2º Turno (16:00)', background_color=(0.85, 0.65, 0.1, 1), color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp')
 
         self.btn_turno_1.bind(on_release=lambda x: self.mudar_turno(1))
         self.btn_turno_2.bind(on_release=lambda x: self.mudar_turno(2))
@@ -503,11 +496,9 @@ class ProductionScreen(Screen):
         box_meta_input = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=8)
         perfil_inicial = obter_perfil_atual()
         meta_inicial = str(perfil_inicial.get("meta_hoje", 720) if isinstance(perfil_inicial, dict) else 720)
-        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='13sp', size_hint_y=None,
-                                                height='32dp', halign='center')
+        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='13sp', size_hint_y=None, height='32dp', halign='center')
 
-        btn_salvar_meta = RoundedButton(text='Aplicar Meta', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
-                                        height='32dp')
+        btn_salvar_meta = RoundedButton(text='Aplicar Meta', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None, height='32dp')
         btn_salvar_meta.color = (1, 1, 1, 1)
         btn_salvar_meta.font_size = '10sp'
         btn_salvar_meta.bold = True
@@ -519,28 +510,14 @@ class ProductionScreen(Screen):
 
         content.add_widget(box_meta_card)
 
-        # Cabeçalho da Tabela adaptado para encaixar na tela do celular sem rolar para os lados
-        # Larguras otimizadas somando exatamente a largura padrão da tela
-        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=1,
-                                      size_hint_x=1)
-        self.table_header.add_widget(
-            Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
-                  size_hint_x_hint=None, size_hint_x=0.24))
-        self.table_header.add_widget(
-            Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
-                  size_hint_x=0.12))
-        self.table_header.add_widget(
-            Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
-                  size_hint_x=0.12))
-        self.table_header.add_widget(
-            Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
-                  size_hint_x=0.18))
-        self.table_header.add_widget(
-            Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='9sp', halign='center',
-                  size_hint_x=0.17))
-        self.table_header.add_widget(
-            Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center',
-                  size_hint_x=0.17))
+        # Cabeçalho corrigido (removido o 'size_hint_x_hint')
+        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=1, size_hint_x=1)
+        self.table_header.add_widget(Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.24))
+        self.table_header.add_widget(Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.12))
+        self.table_header.add_widget(Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.12))
+        self.table_header.add_widget(Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.18))
+        self.table_header.add_widget(Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.17))
+        self.table_header.add_widget(Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.17))
         content.add_widget(self.table_header)
 
         self.turno_atual = 2
@@ -576,31 +553,23 @@ class ProductionScreen(Screen):
         content.add_widget(self.tabela_linhas_layout)
 
         box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp', spacing=10, padding=[0, 2])
-        self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='10sp',
-                                   halign='center')
-        self.lbl_total_neg = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp',
-                                   halign='center')
+        self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='10sp', halign='center')
+        self.lbl_total_neg = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp', halign='center')
         box_totais.add_widget(self.lbl_total_pos)
         box_totais.add_widget(self.lbl_total_neg)
         content.add_widget(box_totais)
 
         box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='42dp', spacing=6)
         btn_calcular = RoundedButton(text='CALCULAR', bg_color=(0.25, 0.65, 0.85, 1))
-        btn_calcular.color = (1, 1, 1, 1);
-        btn_calcular.bold = True;
-        btn_calcular.font_size = '10sp'
+        btn_calcular.color = (1, 1, 1, 1); btn_calcular.bold = True; btn_calcular.font_size = '10sp'
         btn_calcular.bind(on_release=self.calcular_totais)
 
         btn_salvar = RoundedButton(text='SALVAR', bg_color=(0.25, 0.7, 0.4, 1))
-        btn_salvar.color = (1, 1, 1, 1);
-        btn_salvar.bold = True;
-        btn_salvar.font_size = '10sp'
+        btn_salvar.color = (1, 1, 1, 1); btn_salvar.bold = True; btn_salvar.font_size = '10sp'
         btn_salvar.bind(on_release=self.salvar_dados)
 
         btn_compartilhar = RoundedButton(text='WHATSAPP', bg_color=(0.9, 0.6, 0.2, 1))
-        btn_compartilhar.color = (1, 1, 1, 1);
-        btn_compartilhar.bold = True;
-        btn_compartilhar.font_size = '10sp'
+        btn_compartilhar.color = (1, 1, 1, 1); btn_compartilhar.bold = True; btn_compartilhar.font_size = '10sp'
         btn_compartilhar.bind(on_release=self.compartilhar_dados)
 
         box_botoes.add_widget(btn_calcular)
@@ -639,16 +608,11 @@ class ProductionScreen(Screen):
             row = BoxLayout(orientation='horizontal', size_hint_y=None, height='34dp', spacing=1, size_hint_x=1)
 
             lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='8.5sp', halign='center', size_hint_x=0.24)
-            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', bold=True,
-                            halign='center', size_hint_x=0.12)
-            lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', halign='center',
-                            size_hint_x=0.12)
-            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='10sp', halign='center',
-                                size_hint_x=0.18)
-            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center',
-                             size_hint_x=0.17)
-            lbl_delta = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center',
-                              size_hint_x=0.17)
+            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', bold=True, halign='center', size_hint_x=0.12)
+            lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', halign='center', size_hint_x=0.12)
+            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='10sp', halign='center', size_hint_x=0.18)
+            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center', size_hint_x=0.17)
+            lbl_delta = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center', size_hint_x=0.17)
 
             linha_info = {
                 'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
@@ -813,8 +777,7 @@ class ProductionScreen(Screen):
         except Exception:
             pass
 
-        Popup(title='Compartilhar', content=Label(text='Relatório formatado e pronto para o WhatsApp!'),
-              size_hint=(0.8, 0.3)).open()
+        Popup(title='Compartilhar', content=Label(text='Relatório formatado e pronto para o WhatsApp!'), size_hint=(0.8, 0.3)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
