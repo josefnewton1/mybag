@@ -1300,7 +1300,7 @@ class TasksScreen(Screen):
 
 
 # ==========================================
-# 8. TELA DE CHECAGEM (DUPLO QR CODE / SCAN)
+# 8. TELA DE CHECAGEM (DUPLO QR CODE / SCAN SEGURO)
 # ==========================================
 class ChecagemScreen(Screen):
     def __init__(self, **kwargs):
@@ -1385,33 +1385,63 @@ class ChecagemScreen(Screen):
         paleta = obter_paleta_atual()
         self.bg_color.rgba = paleta['bg']
 
-    def abrir_scanner(self, qual_botao):
+    def abrir_scanner(self, qual_banco):
         if platform == 'android':
             try:
                 from jnius import autoclass
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
+
+                activity = PythonActivity.mActivity
+
+                # Tentativa de chamar o leitor ZXing padrão ou Intent genérica de captura
                 intent = Intent("com.google.zxing.client.android.SCAN")
                 intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
-                PythonActivity = autoclass('org.kivy.android.PythonActivity')
-                activity = PythonActivity.mActivity
-                activity.startActivityForResult(intent, qual_botao)
-            except Exception as e:
-                if qual_botao == 1:
-                    self.input_resultado_1.text = f"Erro: {e}"
+
+                # Verifica se existe app para atender essa Intent antes de chamar
+                packageManager = activity.getPackageManager()
+                if intent.resolveActivity(packageManager) is not None:
+                    activity.startActivityForResult(intent, qual_banco)
                 else:
-                    self.input_resultado_2.text = f"Erro: {e}"
+                    # Se não houver leitor externo instalado, abre caixa para digitar ou aviso amigável
+                    self.mostrar_aviso_leitor(qual_banco)
+            except Exception as e:
+                self.mostrar_aviso_leitor(qual_banco)
         else:
             # Simulador para testes no PC
-            if qual_botao == 1:
-                self.input_resultado_1.text = "QR_TESTE_CHICOTE_A"
+            if qual_banco == 1:
+                self.input_resultado_1.text = "CHICOTE_STELLANTIS_A01"
             else:
-                self.input_resultado_2.text = "QR_TESTE_CHICOTE_B"
+                self.input_resultado_2.text = "CHICOTE_STELLANTIS_B02"
 
             Popup(
-                title=f'Simulador QR Code {qual_botao}',
-                content=Label(text=f'Código {qual_botao} simulado com sucesso no PC!'),
+                title=f'Simulador QR Code {qual_banco}',
+                content=Label(text=f'Código {qual_banco} preenchido com sucesso!'),
                 size_hint=(0.8, 0.3)
             ).open()
+
+    def mostrar_aviso_leitor(self, qual_banco):
+        # Caso o celular não tenha o app ZXing instalado, avisa e permite inserir/testar de forma limpa
+        box = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        lbl = Label(text='Nenhum leitor de QR Code padrão encontrado.\nInsira o código manualmente:', halign='center')
+        txt = TextInput(text='', hint_text='Digite o código...', multiline=False, size_hint_y=None, height='40dp')
+
+        btn_ok = RoundedButton(text='Confirmar', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None, height='40dp')
+
+        pop = Popup(title='Leitor Indisponível', content=box, size_hint=(0.8, 0.35))
+
+        def salvar_manual(instance):
+            if qual_banco == 1:
+                self.input_resultado_1.text = txt.text
+            else:
+                self.input_resultado_2.text = txt.text
+            pop.dismiss()
+
+        btn_ok.bind(on_release=salvar_manual)
+        box.add_widget(lbl)
+        box.add_widget(txt)
+        box.add_widget(btn_ok)
+        pop.open()
 
     def realizar_checagem(self, instance):
         c1 = self.input_resultado_1.text.strip()
