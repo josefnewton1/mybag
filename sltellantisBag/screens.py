@@ -13,6 +13,123 @@ from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.popup import Popup
+
+
+# Assumindo que já tens os teus componentes personalizados como RoundedButton
+class UserProfileScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.main_layout = BoxLayout(orientation='vertical', padding=15, spacing=10)
+
+        # Cabeçalho da Tela de Perfil
+        header = Label(
+            text='EDITAR PERFIL DO USUÁRIO',
+            color=(1.0, 0.82, 0.0, 1),
+            font_size='16sp',
+            bold=True,
+            size_hint_y=None,
+            height='40dp'
+        )
+        self.main_layout.add_widget(header)
+
+        # Formulário com os campos solicitados
+        form_layout = GridLayout(cols=1, spacing=10, size_hint_y=None, height='350dp')
+
+        self.inputs = {}
+        campos = [
+            ("Nome Completo", "nome_completo"),
+            ("E-mail", "email"),
+            ("Telefone", "telefone"),
+            ("Função / Cargo", "funcao")
+        ]
+
+        for rotulo, chave in campos:
+            box = BoxLayout(orientation='vertical', spacing=2, size_hint_y=None, height='60dp')
+            box.add_widget(Label(text=rotulo, font_size='12sp', color=(0.12, 0.14, 0.18, 1), halign='left'))
+
+            txt_input = TextInput(
+                text='',
+                multiline=False,
+                font_size='13sp',
+                size_hint_y=None,
+                height='35dp'
+            )
+            self.inputs[chave] = txt_input
+            box.add_widget(txt_input)
+            form_layout.add_widget(box)
+
+        self.main_layout.add_widget(form_layout)
+
+        # Botões de Ação Inferiores (Salvar, Apagar Campos, Excluir Perfil)
+        botoes_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height='45dp', spacing=10)
+
+        btn_salvar = RoundedButton(text='Salvar', bg_color=(0.25, 0.7, 0.4, 1))
+        btn_salvar.bind(on_release=self.salvar_perfil)
+
+        btn_apagar = RoundedButton(text='Apagar Campos', bg_color=(0.85, 0.5, 0.1, 1))
+        btn_apagar.bind(on_release=self.apagar_campos)
+
+        btn_excluir = RoundedButton(text='Excluir Perfil', bg_color=(0.8, 0.2, 0.2, 1))
+        btn_excluir.bind(on_release=self.excluir_perfil)
+
+        botoes_layout.add_widget(btn_salvar)
+        botoes_layout.add_widget(btn_apagar)
+        botoes_layout.add_widget(btn_excluir)
+
+        self.main_layout.add_widget(botoes_layout)
+
+        # Botão para voltar à tela anterior (Configurações)
+        btn_voltar = RoundedButton(text='Voltar', bg_color=(0.3, 0.3, 0.3, 1), size_hint_y=None, height='40dp')
+        btn_voltar.bind(on_release=self.voltar_config)
+        self.main_layout.add_widget(btn_voltar)
+
+        self.add_widget(self.main_layout)
+        self.carregar_dados_salvos()
+
+    def on_enter(self):
+        # Sempre que entrar na tela, puxa os dados salvos mais recentes
+        self.carregar_dados_salvos()
+
+    def carregar_dados_salvos(self):
+        perfil = obter_perfil_atual()
+        if isinstance(perfil, dict):
+            for chave, txt_input in self.inputs.items():
+                txt_input.text = str(perfil.get(chave, ''))
+
+    def salvar_perfil(self, instance):
+        perfil = obter_perfil_atual()
+        if isinstance(perfil, dict):
+            for chave, txt_input in self.inputs.items():
+                perfil[chave] = txt_input.text.strip()
+            salvar_dados_gerais()  # Salva na planilha/base de dados interna
+
+        Popup(title='Sucesso', content=Label(text='Informações do perfil salvas com sucesso!'),
+              size_hint=(0.8, 0.3)).open()
+
+    def apagar_campos(self, instance):
+        # Limpa apenas os textos digitados nos inputs da tela atual
+        for txt_input in self.inputs.values():
+            txt_input.text = ''
+        Popup(title='Apagar', content=Label(text='Campos limpos com sucesso!'), size_hint=(0.8, 0.3)).open()
+
+    def excluir_perfil(self, instance):
+        perfil = obter_perfil_atual()
+        if isinstance(perfil, dict):
+            for chave in self.inputs.keys():
+                perfil[chave] = ''  # Reseta as informações na base de dados
+            salvar_dados_gerais()
+        self.apagar_campos(instance)
+        Popup(title='Excluir', content=Label(text='Perfil apagado com sucesso!'), size_hint=(0.8, 0.3)).open()
+
+    def voltar_config(self, instance):
+        self.manager.current = 'config'  # Nome da tua tela de configurações no ScreenManager
+
 # Verificação e importação para leitura de QR Code e Câmera no Android
 try:
     from jnius import autoclass
@@ -226,9 +343,8 @@ class HomeScreen(Screen):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
 
-
 # ==========================================
-# 3. TELA DE DASHBOARD DE RELATÓRIOS
+# 3. TELA DE DASHBOARD DE RELATÓRIOS SIMPLIFICADA
 # ==========================================
 class ReportsScreen(Screen):
     def __init__(self, **kwargs):
@@ -243,14 +359,12 @@ class ReportsScreen(Screen):
         with header.canvas.before:
             Color(0.08, 0.10, 0.13, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
-        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
-                    pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
-        header.add_widget(Label(text='📊 DASHBOARD EXECUTIVO', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True,
-                                halign='center'))
+        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size), pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
+        header.add_widget(Label(text='📊 DASHBOARD EXECUTIVO', color=(1.0, 0.82, 0.0, 1), font_size='15sp', bold=True, halign='center'))
         self.main_layout.add_widget(header)
 
         self.scroll = ScrollView()
-        self.content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=12, padding=12)
+        self.content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=15, padding=15)
         self.content.bind(minimum_height=self.content.setter('height'))
 
         self.grid_kpi = GridLayout(cols=2, size_hint_y=None, height='85dp', spacing=10)
@@ -260,32 +374,29 @@ class ReportsScreen(Screen):
         self.grid_kpi.add_widget(self.card_prod['layout'])
         self.content.add_widget(self.grid_kpi)
 
-        self.card_status = BoxLayout(orientation='vertical', size_hint_y=None, height='95dp', padding=10, spacing=4)
+        self.card_status = BoxLayout(orientation='vertical', size_hint_y=None, height='100dp', padding=12, spacing=6)
         with self.card_status.canvas.before:
             Color(0.18, 0.22, 0.28, 1)
             self.cs_bg = RoundedRectangle(size=self.card_status.size, pos=self.card_status.pos, radius=[10])
-        self.card_status.bind(size=lambda inst, val: setattr(self.cs_bg, 'size', inst.size),
-                              pos=lambda inst, val: setattr(self.cs_bg, 'pos', inst.pos))
+        self.card_status.bind(size=lambda inst, val: setattr(self.cs_bg, 'size', inst.size), pos=lambda inst, val: setattr(self.cs_bg, 'pos', inst.pos))
 
-        self.lbl_status_tit = Label(text='EFICIÊNCIA GERAL DA OPERAÇÃO', color=(0.8, 0.8, 0.8, 1), font_size='10sp',
-                                    bold=True, size_hint_y=None, height='16dp')
-        self.lbl_status_val = Label(text='0.0% Concluído', color=(1.0, 0.82, 0.0, 1), font_size='18sp', bold=True,
-                                    size_hint_y=None, height='28dp')
-        self.lbl_status_det = Label(text='Aguardando novos registros...', color=(0.7, 0.7, 0.7, 1), font_size='10sp',
-                                    size_hint_y=None, height='18dp')
+        self.lbl_status_tit = Label(text='EFICIÊNCIA GERAL DA OPERAÇÃO', color=(0.8, 0.8, 0.8, 1), font_size='11sp', bold=True, size_hint_y=None, height='18dp')
+        self.lbl_status_val = Label(text='0.0% Concluído', color=(1.0, 0.82, 0.0, 1), font_size='20sp', bold=True, size_hint_y=None, height='32dp')
+        self.lbl_status_det = Label(text='Aguardando novos registros...', color=(0.7, 0.7, 0.7, 1), font_size='11sp', size_hint_y=None, height='20dp')
 
         self.card_status.add_widget(self.lbl_status_tit)
         self.card_status.add_widget(self.lbl_status_val)
         self.card_status.add_widget(self.lbl_status_det)
         self.content.add_widget(self.card_status)
 
-        lbl_hist_tit = Label(text='REGISTROS RECENTES', color=(1.0, 0.82, 0.0, 1), font_size='12sp', bold=True,
-                             size_hint_y=None, height='25dp', halign='left')
-        lbl_hist_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        self.content.add_widget(lbl_hist_tit)
-
-        self.historico_container = BoxLayout(orientation='vertical', size_hint_y=None, spacing=6)
-        self.content.add_widget(self.historico_container)
+        # Botão principal de apagar tudo / zerar os registros da operação
+        self.btn_apagar_rel = Button(
+            text='🗑️ APAGAR TUDO / ZERAR REGISTROS (0)',
+            size_hint_y=None, height='48dp',
+            background_color=(0.8, 0.2, 0.2, 1), color=(1, 1, 1, 1), bold=True, font_size='12sp'
+        )
+        self.btn_apagar_rel.bind(on_release=self.apagar_todos_dados)
+        self.content.add_widget(self.btn_apagar_rel)
 
         self.scroll.add_widget(self.content)
         self.main_layout.add_widget(self.scroll)
@@ -297,14 +408,22 @@ class ReportsScreen(Screen):
         with card.canvas.before:
             Color(0.18, 0.22, 0.28, 1)
             bg = RoundedRectangle(size=card.size, pos=card.pos, radius=[8])
-        card.bind(size=lambda inst, val: setattr(bg, 'size', inst.size),
-                  pos=lambda inst, val: setattr(bg, 'pos', inst.pos))
-        lbl_t = Label(text=titulo, color=(0.7, 0.7, 0.7, 1), font_size='9sp', bold=True, size_hint_y=None,
-                      height='15dp')
+        card.bind(size=lambda inst, val: setattr(bg, 'size', inst.size), pos=lambda inst, val: setattr(bg, 'pos', inst.pos))
+        lbl_t = Label(text=titulo, color=(0.7, 0.7, 0.7, 1), font_size='9sp', bold=True, size_hint_y=None, height='15dp')
         lbl_v = Label(text=valor_inicial, color=cor_borda, font_size='15sp', bold=True, size_hint_y=None, height='25dp')
         card.add_widget(lbl_t)
         card.add_widget(lbl_v)
         return {'layout': card, 'label_valor': lbl_v}
+
+    def apagar_todos_dados(self, instance):
+        perfil = obter_perfil_atual()
+        if isinstance(perfil, dict):
+            perfil["total_produzido_hoje"] = 0
+            perfil["porcentagem_hoje"] = 0.0
+            perfil["historico_salvo"] = []
+            salvar_dados_gerais()
+        self.on_enter()
+        Popup(title='Relatórios Zerados', content=Label(text='Todos os registros e dados foram apagados com sucesso!'), size_hint=(0.8, 0.3)).open()
 
     def on_enter(self):
         paleta = obter_paleta_atual()
@@ -326,255 +445,188 @@ class ReportsScreen(Screen):
         else:
             self.lbl_status_det.text = "Status: Abaixo da meta. ❌"
 
-        self.historico_container.clear_widgets()
         historico = perfil.get("historico_salvo", []) if isinstance(perfil, dict) else []
-        if not historico:
-            lbl_vazio = Label(text='Nenhum dado registrado ainda.', color=(0.5, 0.5, 0.5, 1), font_size='11sp',
-                              size_hint_y=None, height='30dp')
-            self.historico_container.add_widget(lbl_vazio)
-            self.historico_container.height = 30
-        else:
-            self.historico_container.height = len(historico) * 50
-            for h in historico:
-                item_box = BoxLayout(orientation='vertical', size_hint_y=None, height='45dp', padding=6)
-                with item_box.canvas.before:
-                    Color(0.15, 0.18, 0.24, 1)
-                    bg_i = RoundedRectangle(size=item_box.size, pos=item_box.pos, radius=[6])
-                item_box.bind(size=lambda inst, val: setattr(bg_i, 'size', inst.size),
-                              pos=lambda inst, val: setattr(bg_i, 'pos', inst.pos))
-                lbl_texto = Label(text=str(h), color=(0.9, 0.9, 0.9, 1), font_size='9sp', halign='left',
-                                  valign='middle')
-                lbl_texto.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-                item_box.add_widget(lbl_texto)
-                self.historico_container.add_widget(item_box)
+        qtd_registros = len(historico)
+        self.btn_apagar_rel.text = f'🗑️ APAGAR TUDO / ZERAR REGISTROS ({qtd_registros})'
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
-
+#
 # ==========================================
-# 4. TELA DE PRODUÇÃO (MENU)
+# 5. TELA DE PRODUÇÃO (REESTRUTURADA - PERDAS E CONTrole PROFISSIONAL)
 # ==========================================
 class ProductionScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        main_layout = BoxLayout(orientation='vertical')
+        self.main_layout = BoxLayout(orientation='vertical')
 
-        with main_layout.canvas.before:
-            self.bg_color = Color(0.96, 0.93, 0.88, 1)
-            self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
-        main_layout.bind(size=self._update_bg, pos=self._update_bg)
+        # Fundo geral da tela
+        with self.main_layout.canvas.before:
+            self.bg_color = Color(0.94, 0.95, 0.97, 1)
+            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
+        self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[15, 10])
-        with header.canvas.before:
-            Color(0.12, 0.14, 0.18, 1)
-            self.header_bg = Rectangle(size=header.size, pos=header.size)
-        header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
-                    pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
-        header.add_widget(
-            Label(text='MÓDULO DE PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='17sp', bold=True, halign='center'))
-        main_layout.add_widget(header)
-
-        content = BoxLayout(orientation='vertical', padding=25, spacing=15, size_hint_y=None, height='260dp',
-                            pos_hint={'center_y': 0.5})
-
-        lbl_info = Label(text='Selecione a opção desejada:', color=(0.12, 0.14, 0.18, 1), font_size='14sp', bold=True,
-                         halign='center')
-        lbl_info.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-
-        btn_hxh = RoundedButton(text='📊 ACOMPANHAMENTO HORA A HORA', bg_color=(1.0, 0.82, 0.0, 1), size_hint_y=None,
-                                height='50dp')
-        btn_hxh.color = (0.12, 0.14, 0.18, 1);
-        btn_hxh.bold = True;
-        btn_hxh.font_size = '13sp'
-        btn_hxh.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'hxh_detalhe'))
-
-        btn_tarefas = RoundedButton(text='📷 TAREFAS / LEITURA QR CODE', bg_color=(0.2, 0.6, 0.8, 1), size_hint_y=None,
-                                    height='50dp')
-        btn_tarefas.color = (1, 1, 1, 1);
-        btn_tarefas.bold = True;
-        btn_tarefas.font_size = '13sp'
-        btn_tarefas.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'tasks'))
-
-        content.add_widget(lbl_info)
-        content.add_widget(btn_hxh)
-        content.add_widget(btn_tarefas)
-
-        main_layout.add_widget(content)
-        main_layout.add_widget(Label())
-        main_layout.add_widget(CriarBarraNavegacao(ativa='producao'))
-        self.add_widget(main_layout)
-
-    def on_enter(self):
-        paleta = obter_paleta_atual()
-        self.bg_color.rgba = paleta['bg']
-
-    def _update_bg(self, instance, value):
-        self.bg_rect.size = instance.size
-        self.bg_rect.pos = instance.pos
-
-
-# ==========================================
-# 5. TELA DE DETALHES DA PRODUÇÃO (TABELA H X H)
-# ==========================================
-class HxhDetailScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        main_layout = BoxLayout(orientation='vertical')
-
-        with main_layout.canvas.before:
-            self.bg_color = Color(0.96, 0.93, 0.88, 1)
-            self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
-        main_layout.bind(size=self._update_bg, pos=self._update_bg)
-
-        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='55dp', padding=[10, 5])
+        # Cabeçalho Superior Fixo
+        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='50dp', padding=[15, 0])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
         header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
 
-        btn_voltar = Button(text='⬅ Voltar', size_hint_x=None, width='80dp', background_color=(0.2, 0.2, 0.2, 1),
-                            color=(1, 1, 1, 1), bold=True, font_size='11sp')
-        btn_voltar.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'producao'))
-
-        header.add_widget(btn_voltar)
         header.add_widget(
-            Label(text='ACOMPANHAMENTO HORA A HORA', color=(1.0, 0.82, 0.0, 1), font_size='14sp', bold=True,
+            Label(text='PAINEL DE CONTROLE - PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='13sp', bold=True,
                   halign='center'))
-        main_layout.add_widget(header)
+        self.main_layout.add_widget(header)
 
-        scroll_vertical = ScrollView()
-        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=12, padding=12)
+        # Corpo com Rolagem
+        scroll_vertical = ScrollView(size_hint=(1, 1), bar_width=4)
+        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=10, padding=10)
         content.bind(minimum_height=content.setter('height'))
 
-        box_meta_card = BoxLayout(orientation='vertical', size_hint_y=None, height='90dp', padding=8, spacing=6)
-        lbl_meta_tit = Label(text='DEFINIÇÃO DE META (720 ou 360)', color=(0.12, 0.14, 0.18, 1), font_size='12sp',
-                             bold=True, halign='center')
-        lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        # ==========================================
+        # CARD 1: CONFIGURAÇÃO DE TURNO E META
+        # ==========================================
+        card_turno = BoxLayout(orientation='vertical', size_hint_y=None, height='110dp', padding=10, spacing=8)
+        with card_turno.canvas.before:
+            Color(1, 1, 1, 1)
+            self.rect_card1 = Rectangle(size=card_turno.size, pos=card_turno.pos)
+        card_turno.bind(size=lambda inst, val: setattr(self.rect_card1, 'size', inst.size),
+                        pos=lambda inst, val: setattr(self.rect_card1, 'pos', inst.pos))
 
+        lbl_meta_tit = Label(text='⚙️ CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='11sp',
+                             bold=True, halign='left')
+        lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        card_turno.add_widget(lbl_meta_tit)
+
+        box_turno = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=8)
+        self.btn_turno_1 = Button(text='1º Turno (06:00)', background_color=(0.3, 0.3, 0.3, 1),
+                                  color=(1, 1, 1, 1), bold=True, font_size='10sp')
+        self.btn_turno_2 = Button(text='2º Turno (16:00)', background_color=(0.85, 0.65, 0.1, 1),
+                                  color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp')
+
+        self.btn_turno_1.bind(on_release=lambda x: self.mudar_turno(1))
+        self.btn_turno_2.bind(on_release=lambda x: self.mudar_turno(2))
+        box_turno.add_widget(self.btn_turno_1)
+        box_turno.add_widget(self.btn_turno_2)
+        card_turno.add_widget(box_turno)
+
+        box_meta_input = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=8)
         perfil_inicial = obter_perfil_atual()
         meta_inicial = str(perfil_inicial.get("meta_hoje", 720) if isinstance(perfil_inicial, dict) else 720)
-        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='14sp', size_hint_y=None,
-                                                height='35dp', halign='center')
 
-        btn_salvar_meta = RoundedButton(text='Salvar Meta', bg_color=(0.85, 0.65, 0.1, 1), size_hint_y=None,
-                                        height='30dp')
-        btn_salvar_meta.color = (0.12, 0.14, 0.18, 1)
-        btn_salvar_meta.font_size = '11sp'
+        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='12sp', size_hint_y=None,
+                                                height='32dp', halign='center', hint_text='Meta Total')
+
+        btn_salvar_meta = RoundedButton(text='Aplicar Meta', bg_color=(0.2, 0.5, 0.7, 1), size_hint_y=None,
+                                        height='32dp')
+        btn_salvar_meta.color = (1, 1, 1, 1)
+        btn_salvar_meta.font_size = '10sp'
         btn_salvar_meta.bold = True
         btn_salvar_meta.bind(on_release=self.aplicar_filtro_meta)
 
-        box_meta_card.add_widget(lbl_meta_tit)
-        box_meta_card.add_widget(self.input_meta_selecionada)
-        box_meta_card.add_widget(btn_salvar_meta)
-        content.add_widget(box_meta_card)
+        box_meta_input.add_widget(self.input_meta_selecionada)
+        box_meta_input.add_widget(btn_salvar_meta)
+        card_turno.add_widget(box_meta_input)
 
-        scroll_horizontal = ScrollView(size_hint_y=None, height='350dp', do_scroll_x=True, do_scroll_y=False)
-        tabela_wrapper = BoxLayout(orientation='vertical', size_hint_y=None, size_hint_x=None, width='480dp', spacing=4)
+        content.add_widget(card_turno)
+
+        # ==========================================
+        # CARD 2: TABELA HORA A HORA (COM COLUNA PERDAS)
+        # ==========================================
+        card_tabela = BoxLayout(orientation='vertical', size_hint_y=None, height='400dp', padding=8, spacing=5)
+        with card_tabela.canvas.before:
+            Color(1, 1, 1, 1)
+            self.rect_card2 = Rectangle(size=card_tabela.size, pos=card_tabela.pos)
+        card_tabela.bind(size=lambda inst, val: setattr(self.rect_card2, 'size', inst.size),
+                         pos=lambda inst, val: setattr(self.rect_card2, 'pos', inst.pos))
+
+        lbl_tabela_tit = Label(text='📊 ACOMPANHAMENTO HORA A HORA', color=(0.12, 0.14, 0.18, 1), font_size='11sp',
+                               bold=True, halign='left', size_hint_y=None, height='20dp')
+        lbl_tabela_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        card_tabela.add_widget(lbl_tabela_tit)
+
+        scroll_horizontal = ScrollView(size_hint=(1, 1), do_scroll_x=True, do_scroll_y=False)
+        tabela_wrapper = BoxLayout(orientation='vertical', size_hint_y=None, size_hint_x=None, width='480dp', spacing=3)
         tabela_wrapper.bind(minimum_height=tabela_wrapper.setter('height'))
 
-        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='30dp', spacing=2,
+        # Cabeçalho da Tabela (Alterado Delta -> Perdas)
+        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=2,
                                       size_hint_x=None, width='480dp')
-        self.table_header.add_widget(
-            Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
-                  size_hint_x=None, width='100dp'))
-        self.table_header.add_widget(
-            Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
-                  size_hint_x=None, width='65dp'))
-        self.table_header.add_widget(
-            Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
-                  size_hint_x=None, width='65dp'))
-        self.table_header.add_widget(
-            Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
-                  size_hint_x=None, width='80dp'))
-        self.table_header.add_widget(
-            Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='10sp', halign='center',
-                  size_hint_x=None, width='80dp'))
-        self.table_header.add_widget(
-            Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
-                  size_hint_x=None, width='80dp'))
+        with self.table_header.canvas.before:
+            Color(0.88, 0.90, 0.92, 1)
+            self.rect_th = Rectangle(size=self.table_header.size, pos=self.table_header.pos)
+        self.table_header.bind(size=lambda inst, val: setattr(self.rect_th, 'size', inst.size),
+                               pos=lambda inst, val: setattr(self.rect_th, 'pos', inst.pos))
+
+        colunas = [('HORA', '100dp'), ('Meta', '65dp'), ('Cap.', '65dp'), ('Res.', '80dp'), ('Prod.', '80dp'),
+                   ('Perdas', '80dp')]
+        for nome, largura in colunas:
+            self.table_header.add_widget(
+                Label(text=nome, color=(0.12, 0.14, 0.18, 1), bold=True, font_size='10sp', halign='center',
+                      size_hint_x=None, width=largura))
         tabela_wrapper.add_widget(self.table_header)
 
-        self.dados_hxh_base = [
-            ("16:00-17:00", 100, 100, 50, 50),
-            ("17:00-18:00", 100, 200, 50, 100),
-            ("18:15-19:00", 67, 267, 34, 134),
-            ("19:00-19:15", 19, 286, 9, 143),
-            ("20:15-21:00", 67, 353, 34, 177),
-            ("21:00-22:00", 100, 453, 50, 227),
-            ("22:00-23:00", 100, 553, 50, 277),
-            ("23:15-00:00", 67, 620, 34, 310),
-            ("00:00-01:09", 100, 720, 50, 360),
+        self.turno_atual = 2
+        self.dados_turno_2 = [
+            ("16:00-17:00", 100, 100), ("17:00-18:00", 100, 200), ("18:15-19:00", 67, 267),
+            ("19:00-19:15", 19, 286), ("20:15-21:00", 67, 353), ("21:00-22:00", 100, 453),
+            ("22:00-23:00", 100, 553), ("23:15-00:00", 67, 620), ("00:00-01:09", 100, 720),
+        ]
+        self.dados_turno_1 = [
+            ("06:00-07:00", 100, 100), ("07:00-08:00", 100, 200), ("08:15-09:00", 67, 267),
+            ("09:00-09:15", 19, 286), ("10:15-11:00", 67, 353), ("11:00-12:00", 100, 453),
+            ("12:45-13:45", 100, 553), ("13:45-14:30", 67, 620), ("14:30-15:43", 100, 720),
         ]
 
         self.linhas_widgets = []
-        self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=4, size_hint_x=None,
+        self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=3, size_hint_x=None,
                                               width='480dp')
 
-        for hora, h720, cap720, h360, cap360 in self.dados_hxh_base:
-            row = BoxLayout(orientation='horizontal', size_hint_y=None, height='36dp', spacing=2, size_hint_x=None,
-                            width='480dp')
-
-            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center', size_hint_x=None,
-                          width='100dp')
-            lbl_hxh = Label(text=str(h720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', bold=True, halign='center',
-                            size_hint_x=None, width='65dp')
-            lbl_cap = Label(text=str(cap720), color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center',
-                            size_hint_x=None, width='65dp')
-            txt_res = TextInput(text='', hint_text='Qtd', multiline=False, font_size='11sp', halign='center',
-                                size_hint_x=None, width='80dp')
-            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
-                             size_hint_x=None, width='80dp')
-            lbl_delta = Label(text='+0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
-                              size_hint_x=None, width='80dp')
-
-            linha_info = {
-                'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
-                'txt_res': txt_res, 'lbl_prod': lbl_prod, 'lbl_delta': lbl_delta,
-                'h720': h720, 'cap720': cap720, 'h360': h360, 'cap360': cap360
-            }
-            txt_res.bind(text=lambda inst, val: self.calcular_totais(None))
-
-            row.add_widget(lbl_h)
-            row.add_widget(lbl_hxh)
-            row.add_widget(lbl_cap)
-            row.add_widget(txt_res)
-            row.add_widget(lbl_prod)
-            row.add_widget(lbl_delta)
-
-            self.linhas_widgets.append(linha_info)
-            self.tabela_linhas_layout.add_widget(row)
-
-        self.tabela_linhas_layout.height = len(self.dados_hxh_base) * 40
+        self.construir_linhas_tabela()
         tabela_wrapper.add_widget(self.tabela_linhas_layout)
         scroll_horizontal.add_widget(tabela_wrapper)
-        content.add_widget(scroll_horizontal)
+        card_tabela.add_widget(scroll_horizontal)
 
-        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='38dp', spacing=10, padding=[0, 4])
-        self.lbl_total_pos = Label(text='Total Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='11sp',
+        content.add_widget(card_tabela)
+
+        # ==========================================
+        # CARD 3: PAINEL DE TOTAIS E PERDAS TOTAIS
+        # ==========================================
+        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp', spacing=10, padding=[5, 0])
+        with box_totais.canvas.before:
+            Color(0.90, 0.92, 0.95, 1)
+            self.rect_tot = Rectangle(size=box_totais.size, pos=box_totais.pos)
+        box_totais.bind(size=lambda inst, val: setattr(self.rect_tot, 'size', inst.size),
+                        pos=lambda inst, val: setattr(self.rect_tot, 'pos', inst.pos))
+
+        self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='10sp',
                                    halign='center')
-        self.lbl_total_neg = Label(text='Total Negativo: -0', color=(0.8, 0, 0, 1), bold=True, font_size='11sp',
-                                   halign='center')
+        self.lbl_perdas_totais = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp',
+                                       halign='center')
         box_totais.add_widget(self.lbl_total_pos)
-        box_totais.add_widget(self.lbl_total_neg)
+        box_totais.add_widget(self.lbl_perdas_totais)
         content.add_widget(box_totais)
 
-        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='45dp', spacing=8)
-        btn_calcular = RoundedButton(text='CALCULAR', bg_color=(0.25, 0.65, 0.85, 1))
+        # ==========================================
+        # BOTÕES DE AÇÃO RÁPIDA INFERIORES
+        # ==========================================
+        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='42dp', spacing=8)
+
+        btn_calcular = RoundedButton(text='🔄 CALCULAR', bg_color=(0.2, 0.5, 0.7, 1))
         btn_calcular.color = (1, 1, 1, 1);
         btn_calcular.bold = True;
-        btn_calcular.font_size = '11sp'
+        btn_calcular.font_size = '10sp'
         btn_calcular.bind(on_release=self.calcular_totais)
 
-        btn_salvar = RoundedButton(text='SALVAR', bg_color=(0.25, 0.7, 0.4, 1))
+        btn_salvar = RoundedButton(text='💾 SALVAR', bg_color=(0.2, 0.6, 0.3, 1))
         btn_salvar.color = (1, 1, 1, 1);
         btn_salvar.bold = True;
-        btn_salvar.font_size = '11sp'
+        btn_salvar.font_size = '10sp'
         btn_salvar.bind(on_release=self.salvar_dados)
 
-        btn_compartilhar = RoundedButton(text='COMPARTILHAR', bg_color=(0.9, 0.6, 0.2, 1))
+        btn_compartilhar = RoundedButton(text='📤 WHATSAPP', bg_color=(0.85, 0.55, 0.1, 1))
         btn_compartilhar.color = (1, 1, 1, 1);
         btn_compartilhar.bold = True;
         btn_compartilhar.font_size = '10sp'
@@ -586,8 +638,67 @@ class HxhDetailScreen(Screen):
         content.add_widget(box_botoes)
 
         scroll_vertical.add_widget(content)
-        main_layout.add_widget(scroll_vertical)
-        self.add_widget(main_layout)
+        self.main_layout.add_widget(scroll_vertical)
+        self.main_layout.add_widget(CriarBarraNavegacao(ativa='producao'))
+        self.add_widget(self.main_layout)
+
+    def mudar_turno(self, turno):
+        self.turno_atual = turno
+        if turno == 1:
+            self.btn_turno_1.background_color = (0.85, 0.65, 0.1, 1)
+            self.btn_turno_1.color = (0.12, 0.14, 0.18, 1)
+            self.btn_turno_2.background_color = (0.3, 0.3, 0.3, 1)
+            self.btn_turno_2.color = (1, 1, 1, 1)
+        else:
+            self.btn_turno_2.background_color = (0.85, 0.65, 0.1, 1)
+            self.btn_turno_2.color = (0.12, 0.14, 0.18, 1)
+            self.btn_turno_1.background_color = (0.3, 0.3, 0.3, 1)
+            self.btn_turno_1.color = (1, 1, 1, 1)
+
+        self.construir_linhas_tabela()
+        self.aplicar_filtro_meta(None)
+
+    def construir_linhas_tabela(self):
+        self.tabela_linhas_layout.clear_widgets()
+        self.linhas_widgets = []
+
+        dados_ativos = self.dados_turno_1 if self.turno_atual == 1 else self.dados_turno_2
+
+        for hora, h720_meta, h720_cap in dados_ativos:
+            row = BoxLayout(orientation='horizontal', size_hint_y=None, height='34dp', spacing=2, size_hint_x=None,
+                            width='480dp')
+
+            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center', size_hint_x=None,
+                          width='100dp')
+            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='10sp', bold=True,
+                            halign='center', size_hint_x=None, width='65dp')
+            lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='10sp', halign='center',
+                            size_hint_x=None, width='65dp')
+            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='11sp', halign='center',
+                                size_hint_x=None, width='80dp')
+            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
+                             size_hint_x=None, width='80dp')
+            lbl_perda = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='11sp', halign='center',
+                              size_hint_x=None, width='80dp')
+
+            linha_info = {
+                'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
+                'txt_res': txt_res, 'lbl_prod': lbl_prod, 'lbl_perda': lbl_perda,
+                'base_meta': h720_meta, 'base_cap': h720_cap
+            }
+            txt_res.bind(text=lambda inst, val: self.calcular_totais(None))
+
+            row.add_widget(lbl_h)
+            row.add_widget(lbl_hxh)
+            row.add_widget(lbl_cap)
+            row.add_widget(txt_res)
+            row.add_widget(lbl_prod)
+            row.add_widget(lbl_perda)
+
+            self.linhas_widgets.append(linha_info)
+            self.tabela_linhas_layout.add_widget(row)
+
+        self.tabela_linhas_layout.height = len(dados_ativos) * 37
 
     def on_enter(self):
         paleta = obter_paleta_atual()
@@ -597,48 +708,63 @@ class HxhDetailScreen(Screen):
         meta_str = self.input_meta_selecionada.text.strip()
         meta_val = 360 if '360' in meta_str else 720
         self.input_meta_selecionada.text = str(meta_val)
+
         perfil = obter_perfil_atual()
         if isinstance(perfil, dict):
             perfil["meta_hoje"] = meta_val
         salvar_dados_gerais()
 
+        fator = 0.5 if meta_val == 360 else 1.0
+
         for item in self.linhas_widgets:
-            if meta_val == 360:
-                item['lbl_hxh'].text = str(item['h360'])
-                item['lbl_cap'].text = str(item['cap360'])
-            else:
-                item['lbl_hxh'].text = str(item['h720'])
-                item['lbl_cap'].text = str(item['cap720'])
+            nova_meta = int(item['base_meta'] * fator)
+            nova_cap = int(item['base_cap'] * fator)
+            item['lbl_hxh'].text = str(nova_meta)
+            item['lbl_cap'].text = str(nova_cap)
+
         self.calcular_totais(None)
 
     def calcular_totais(self, instance):
         total_prod_geral = 0
         total_pos = 0
-        total_neg = 0
+        total_perdas = 0
         meta_atual = int(self.input_meta_selecionada.text.strip() or 720)
+        acumulado_anterior = 0
 
-        for item in self.linhas_widgets:
+        for i, item in enumerate(self.linhas_widgets):
             txt = item['txt_res'].text.strip()
-            meta_hxh = int(item['lbl_hxh'].text)
+            meta_hora = int(item['lbl_hxh'].text)
+
             if txt.isdigit():
-                qtd = int(txt)
-                total_prod_geral += qtd
-                item['lbl_prod'].text = str(qtd)
-                delta = qtd - meta_hxh
-                item['lbl_delta'].text = f"+{delta}" if delta >= 0 else str(delta)
+                res_atual = int(txt)
+                if i == 0:
+                    prod_intervalo = res_atual
+                else:
+                    prod_intervalo = res_atual - acumulado_anterior
+
+                item['lbl_prod'].text = str(prod_intervalo)
+                total_prod_geral = res_atual
+
+                # Perdas / Delta da linha (Produção do intervalo menos a meta da hora)
+                delta = prod_intervalo - meta_hora
+                item['lbl_perda'].text = str(delta) if delta < 0 else f"+{delta}"
+
                 if delta >= 0:
-                    item['lbl_delta'].color = (0, 0.5, 0, 1)
+                    item['lbl_perda'].color = (0, 0.5, 0, 1)
                     total_pos += delta
                 else:
-                    item['lbl_delta'].color = (0.8, 0, 0, 1)
-                    total_neg += abs(delta)
+                    item['lbl_perda'].color = (0.8, 0, 0, 1)
+                    total_perdas += abs(delta)
+
+                acumulado_anterior = res_atual
             else:
                 item['lbl_prod'].text = "0"
-                item['lbl_delta'].text = "+0"
-                item['lbl_delta'].color = (0.5, 0.5, 0.5, 1)
+                item['lbl_perda'].text = "0"
+                item['lbl_perda'].color = (0.5, 0.5, 0.5, 1)
 
-        self.lbl_total_pos.text = f"Total Positivo: +{total_pos}"
-        self.lbl_total_neg.text = f"Total Negativo: -{total_neg}"
+        self.lbl_total_pos.text = f"Positivo: +{total_pos}"
+        self.lbl_perdas_totais.text = f"Perdas Totais: -{total_perdas}"
+
         perfil = obter_perfil_atual()
         if isinstance(perfil, dict):
             perfil["total_produzido_hoje"] = total_prod_geral
@@ -653,7 +779,8 @@ class HxhDetailScreen(Screen):
             meta = perfil.get('meta_hoje', 720)
             prod = perfil.get('total_produzido_hoje', 0)
             pct = perfil.get('porcentagem_hoje', 0.0)
-            resumo = f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')} | Meta: {meta} | Prod: {prod} ({pct:.1f}%)"
+            turno_nome = "1º Turno" if self.turno_atual == 1 else "2º Turno"
+            resumo = f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')} ({turno_nome}) | Meta: {meta} | Prod: {prod} ({pct:.1f}%)"
             if "historico_salvo" not in perfil or not isinstance(perfil["historico_salvo"], list):
                 perfil["historico_salvo"] = []
             perfil["historico_salvo"].insert(0, resumo)
@@ -663,20 +790,50 @@ class HxhDetailScreen(Screen):
         Popup(title='Sucesso', content=Label(text='Dados salvos com sucesso!'), size_hint=(0.8, 0.3)).open()
 
     def compartilhar_dados(self, instance):
+        from kivy.utils import platform
         self.calcular_totais(None)
         perfil = obter_perfil_atual()
         meta = perfil.get('meta_hoje', 720) if isinstance(perfil, dict) else 720
         prod = perfil.get('total_produzido_hoje', 0) if isinstance(perfil, dict) else 0
         pct = perfil.get('porcentagem_hoje', 0.0) if isinstance(perfil, dict) else 0.0
-        texto = f"*RELATÓRIOS MYBAG*\nMeta: {meta} | Prod: {prod} ({pct:.1f}%)\n{self.lbl_total_pos.text} | {self.lbl_total_neg.text}"
+        turno_nome = "1º Turno" if self.turno_atual == 1 else "2º Turno"
+
+        texto = f"*RELATÓRIOS MYBAG ({turno_nome})*\nMeta: {meta} | Prod: {prod} ({pct:.1f}%)\n{self.lbl_total_pos.text} | {self.lbl_perdas_totais.text}"
+
+        abriu_whatsapp = False
+        if platform == 'android':
+            try:
+                import jnius
+                from jnius import autoclass
+                Intent = autoclass('android.content.Intent')
+                String = autoclass('java.lang.String')
+                intent = Intent(Intent.ACTION_SEND)
+                intent.setType("text/plain")
+                intent.setPackage("com.whatsapp")
+                intent.putExtra(Intent.EXTRA_TEXT, String(texto))
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                currentActivity = PythonActivity.mActivity
+                currentActivity.startActivity(intent)
+                abriu_whatsapp = True
+            except Exception as e:
+                print(f"Erro ao abrir o WhatsApp nativo: {e}")
+
+        if not abriu_whatsapp:
+            try:
+                import urllib.parse
+                import webbrowser
+                texto_codificado = urllib.parse.quote(texto)
+                webbrowser.open(f"https://api.whatsapp.com/send?text={texto_codificado}")
+            except Exception:
+                pass
+
         Clipboard.copy(texto)
-        Popup(title='Compartilhar', content=Label(text='Relatório copiado para a área de transferência!'),
+        Popup(title='Compartilhar', content=Label(text='Relatório pronto e copiado para a área de transferência!'),
               size_hint=(0.8, 0.3)).open()
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
 
 # ==========================================
 # 6. TELA DE CONFIGURAÇÕES
@@ -709,28 +866,30 @@ class ConfigScreen(Screen):
 
         btn_perfil = RoundedButton(text='👤 Alterar Perfil / Usuário', bg_color=(0.18, 0.22, 0.28, 1), size_hint_y=None,
                                    height='48dp')
-        btn_perfil.color = (1, 1, 1, 1);
-        btn_perfil.bold = True;
+        btn_perfil.color = (1, 1, 1, 1)
+        btn_perfil.bold = True
         btn_perfil.font_size = '13sp'
-        btn_perfil.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'welcome'))
+        # AQUI ESTÁ O SEGREDO: Faz o botão de perfil abrir a nova tela 'user_profile'
+        btn_perfil.bind(on_release=lambda x: setattr(self.manager, 'current', 'user_profile'))
 
         btn_cores = RoundedButton(text='🎨 Alterar Cores e Tema', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
                                   height='48dp')
-        btn_cores.color = (1, 1, 1, 1);
-        btn_cores.bold = True;
+        btn_cores.color = (1, 1, 1, 1)
+        btn_cores.bold = True
         btn_cores.font_size = '13sp'
         btn_cores.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'theme_screen'))
 
         btn_notif = RoundedButton(text='🔔 Notificações e Alertas', bg_color=(0.25, 0.7, 0.4, 1), size_hint_y=None,
                                   height='48dp')
-        btn_notif.color = (1, 1, 1, 1);
-        btn_notif.bold = True;
+        btn_notif.color = (1, 1, 1, 1)
+        btn_notif.bold = True
         btn_notif.font_size = '13sp'
         btn_notif.bind(on_release=self.acao_notificacoes)
 
         content.add_widget(btn_perfil)
         content.add_widget(btn_cores)
         content.add_widget(btn_notif)
+
 
         scroll.add_widget(content)
         layout.add_widget(scroll)
@@ -748,8 +907,6 @@ class ConfigScreen(Screen):
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
-
 # ==========================================
 # 7. TELA DE ESCOLHA DE TEMAS (3 OPÇÕES)
 # ==========================================
@@ -837,6 +994,8 @@ class ThemeScreen(Screen):
 # ==========================================
 # 8. TELA DE SUPORTE
 # ==========================================
+# 7. TELA DE SUPORTE
+# ==========================================
 class SupportScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -858,7 +1017,7 @@ class SupportScreen(Screen):
         content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=14, padding=16)
         content.bind(minimum_height=content.setter('height'))
 
-        card_info = BoxLayout(orientation='vertical', size_hint_y=None, height='120dp', padding=14, spacing=8)
+        card_info = BoxLayout(orientation='vertical', size_hint_y=None, height='135dp', padding=14, spacing=8)
         with card_info.canvas.before:
             Color(0.18, 0.22, 0.28, 1)
             bg_c = RoundedRectangle(size=card_info.size, pos=card_info.pos, radius=[10])
@@ -876,6 +1035,15 @@ class SupportScreen(Screen):
         card_info.add_widget(lbl_tel)
         content.add_widget(card_info)
 
+        # Botão para apagar todos os registros de relatório armazenados
+        btn_zerar_suporte = Button(
+            text='🗑️ APAGAR TODOS OS REGISTROS DE RELATÓRIO',
+            size_hint_y=None, height='48dp',
+            background_color=(0.8, 0.2, 0.2, 1), color=(1, 1, 1, 1), bold=True, font_size='12sp'
+        )
+        btn_zerar_suporte.bind(on_release=self.apagar_todos_registros_relatorio)
+        content.add_widget(btn_zerar_suporte)
+
         scroll.add_widget(content)
         layout.add_widget(scroll)
         layout.add_widget(CriarBarraNavegacao(ativa='suporte'))
@@ -885,11 +1053,23 @@ class SupportScreen(Screen):
         paleta = obter_paleta_atual()
         self.bg_color.rgba = paleta['bg']
 
+    def apagar_todos_registros_relatorio(self, instance):
+        perfil = obter_perfil_atual()
+        if isinstance(perfil, dict):
+            perfil["total_produzido_hoje"] = 0
+            perfil["porcentagem_hoje"] = 0.0
+            perfil["historico_salvo"] = []  # Limpa o histórico da tela de relatórios
+            salvar_dados_gerais()
+
+        Popup(
+            title='Registros Apagados',
+            content=Label(text='Todos os registros e histórico da tela de relatório foram apagados com sucesso!'),
+            size_hint=(0.8, 0.3)
+        ).open()
+
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
-
 # ==========================================
 # 9. TELA DE TAREFAS / LEITURA QR CODE E CÂMERA
 # ==========================================
