@@ -13,7 +13,7 @@ from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 from kivy.utils import platform
-
+from kivy.uix.widget import Widget
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -145,85 +145,121 @@ from components import CircularAvatar, RoundedButton, CriarBarraNavegacao, abrir
 
 
 # ==========================================
-# 1. TELA DE BOAS-VINDAS / LOGIN
+# 1. TELA DE LOGIN / BOAS-VINDAS (ESTILO REFERÊNCIA)
 # ==========================================
 class WelcomeScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        main_layout = BoxLayout(orientation='vertical', padding=25, spacing=15)
+        self.main_layout = BoxLayout(orientation='vertical')
 
-        with main_layout.canvas.before:
-            self.bg_color = Color(0.96, 0.93, 0.88, 1)
-            self.bg_rect = Rectangle(size=main_layout.size, pos=main_layout.pos)
-        main_layout.bind(size=self._update_bg, pos=self._update_bg)
+        # Fundo com a cor azul corporativa da Stellantis
+        with self.main_layout.canvas.before:
+            self.bg_color = Color(0.08, 0.16, 0.36, 1)  # Azul escuro elegante
+            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
+        self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        main_layout.add_widget(Label(size_hint_y=None, height='10dp'))
-        container_avatar = BoxLayout(orientation='vertical', size_hint=(None, None), size=('85dp', '85dp'),
-                                     pos_hint={'center_x': 0.5})
-        self.avatar_real = CircularAvatar(size=('85dp', '85dp'))
-        container_avatar.add_widget(self.avatar_real)
-        main_layout.add_widget(container_avatar)
+        # Scroll para garantir que caiba em qualquer tela de celular sem cortar
+        scroll = ScrollView(size_hint=(1, 1))
+        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=18, padding=30)
+        content.bind(minimum_height=content.setter('height'))
 
-        btn_trocar = Button(text='Alterar GIF de Perfil', size_hint=(None, None), size=('160dp', '30dp'),
-                            pos_hint={'center_x': 0.5}, background_color=(0.12, 0.14, 0.18, 1),
-                            color=(1.0, 0.82, 0.0, 1), bold=True, font_size='11sp')
-        btn_trocar.bind(on_release=lambda x: abrir_seletor_foto(self.carregar_foto_usuario))
-        main_layout.add_widget(btn_trocar)
+        # Espaçamento superior para alinhar o logo no topo
+        content.add_widget(Widget(size_hint_y=None, height='20dp'))
 
-        box_input = BoxLayout(orientation='vertical', size_hint_y=None, height='75dp', spacing=5)
-        lbl_instrucao = Label(text='Seu Nome Completo (Usuário):', color=(0.12, 0.14, 0.18, 1), font_size='12sp',
-                              bold=True, halign='left')
-        lbl_instrucao.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        # --- TOPO: MYBAG COM ÍCONE EM CIMA E STELLANTIS EMBAIXO ---
+        box_logo = BoxLayout(orientation='vertical', size_hint_y=None, height='90dp', spacing=4)
 
-        self.input_nome = TextInput(text=DADOS_APP.get("usuario_atual", "José Nilton"), multiline=False,
-                                    font_size='14sp',
-                                    size_hint_y=None, height='38dp', halign='center')
-        self.input_nome.bind(text=self.ao_mudar_nome)
-        box_input.add_widget(lbl_instrucao)
-        box_input.add_widget(self.input_nome)
-        main_layout.add_widget(box_input)
+        # Nome MyBag com ícone
+        lbl_mybag = Label(text='🛍️ MYBAG', color=(1.0, 0.82, 0.0, 1), font_size='22sp', bold=True, halign='center')
+        lbl_mybag.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
-        btn_entrar = Button(text='ENTRAR NO SISTEMA', size_hint_y=None, height='48dp',
-                            background_color=(1.0, 0.82, 0.0, 1), color=(0.12, 0.14, 0.18, 1), bold=True,
-                            font_size='15sp')
-        btn_entrar.bind(on_release=self.ir_para_inicio)
-        main_layout.add_widget(btn_entrar)
-        main_layout.add_widget(Label())
+        # Nome Stellantis logo em baixo (sem letter_spacing)
+        lbl_stellantis = Label(text='STELLANTIS', color=(1, 1, 1, 1), font_size='14sp', bold=True, halign='center')
+        lbl_stellantis.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
 
-        self.add_widget(main_layout)
-        self.carregar_foto_usuario()
+        box_logo.add_widget(lbl_mybag)
+        box_logo.add_widget(lbl_stellantis)
+        content.add_widget(box_logo)
 
-    def on_enter(self):
-        paleta = obter_paleta_atual()
-        self.bg_color.rgba = paleta['bg']
+        content.add_widget(Widget(size_hint_y=None, height='10dp'))
 
-    def ao_mudar_nome(self, instance, valor):
-        nome_limpo = valor.strip()
-        if nome_limpo:
-            DADOS_APP["usuario_atual"] = nome_limpo
-            obter_perfil_atual()
-            self.carregar_foto_usuario()
+        # --- CAMPO CPF / MATRÍCULA ---
+        lbl_cpf = Label(text='CPF / Matrícula', color=(1, 1, 1, 1), font_size='12sp', size_hint_y=None, height='22dp',
+                        halign='left')
+        lbl_cpf.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        content.add_widget(lbl_cpf)
 
-    def carregar_foto_usuario(self):
-        perfil = obter_perfil_atual()
-        caminho_foto = perfil.get("foto_path", "") if isinstance(perfil, dict) else ""
-        self.avatar_real.atualizar_imagem(caminho_foto)
+        self.input_cpf = TextInput(
+            text='', hint_text='Digite seu CPF ou Matrícula', multiline=False,
+            font_size='13sp', size_hint_y=None, height='45dp', halign='left',
+            padding=[15, 12, 15, 12]
+        )
+        content.add_widget(self.input_cpf)
 
-    def ir_para_inicio(self, instance):
-        nome_digitado = self.input_nome.text.strip()
-        if nome_digitado:
-            DADOS_APP["usuario_atual"] = nome_digitado
-            obter_perfil_atual()
-            salvar_dados_gerais()
-        app = App.get_running_app()
-        app.sm.get_screen('inicio').atualizar_dados_dashboard()
-        app.sm.current = 'inicio'
+        # --- CAMPO SENHA ---
+        lbl_senha = Label(text='Senha', color=(1, 1, 1, 1), font_size='12sp', size_hint_y=None, height='22dp',
+                          halign='left')
+        lbl_senha.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        content.add_widget(lbl_senha)
+
+        self.input_senha = TextInput(
+            text='', hint_text='Digite sua senha', password=True, multiline=False,
+            font_size='13sp', size_hint_y=None, height='45dp', halign='left',
+            padding=[15, 12, 15, 12]
+        )
+        content.add_widget(self.input_senha)
+
+        content.add_widget(Widget(size_hint_y=None, height='5dp'))
+
+        # --- BOTÃO ENTRAR ---
+        btn_entrar = RoundedButton(text='Entrar', bg_color=(0.93, 0.93, 0.89, 1), size_hint_y=None, height='48dp')
+        btn_entrar.color = (0.08, 0.16, 0.36, 1)
+        btn_entrar.bold = True
+        btn_entrar.font_size = '14sp'
+        btn_entrar.bind(on_release=self.fazer_login)
+        content.add_widget(btn_entrar)
+
+        # --- OPÇÕES INFERIORES (Esqueci a senha / Lembrar) ---
+        box_opcoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp')
+
+        lbl_esqueci = Label(text='Esqueci minha senha', color=(0.8, 0.8, 0.8, 1), font_size='11sp', halign='left')
+        lbl_esqueci.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+
+        box_lembrar = BoxLayout(orientation='horizontal', size_hint_x=None, width='120dp', spacing=5)
+        lbl_lembrar = Label(text='Lembrar CPF', color=(0.8, 0.8, 0.8, 1), font_size='11sp', halign='right')
+        lbl_lembrar.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+
+        from kivy.uix.checkbox import CheckBox
+        chk = CheckBox(size_hint_x=None, width='30dp')
+
+        box_lembrar.add_widget(lbl_lembrar)
+        box_lembrar.add_widget(chk)
+
+        box_opcoes.add_widget(lbl_esqueci)
+        box_opcoes.add_widget(box_lembrar)
+        content.add_widget(box_opcoes)
+
+        content.add_widget(Widget(size_hint_y=None, height='20dp'))
+
+        # --- BOTÃO CADASTRAR ---
+        btn_cadastrar = RoundedButton(text='Quero me cadastrar', bg_color=(0.08, 0.16, 0.36, 1), size_hint_y=None,
+                                      height='45dp')
+        btn_cadastrar.color = (1, 1, 1, 1)
+        btn_cadastrar.bold = True
+        btn_cadastrar.font_size = '13sp'
+        btn_cadastrar.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'inicio'))
+        content.add_widget(btn_cadastrar)
+
+        scroll.add_widget(content)
+        self.main_layout.add_widget(scroll)
+        self.add_widget(self.main_layout)
+
+    def fazer_login(self, instance):
+        App.get_running_app().sm.current = 'inicio'
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
-
 # ==========================================
 # 2. TELA DE INÍCIO (PAINEL PRINCIPAL PROFISSIONAL)
 # ==========================================
@@ -442,7 +478,7 @@ class ReportsScreen(Screen):
         self.bg_rect.pos = instance.pos
 #
 # ==========================================
-# 4. TELA DE PRODUÇÃO (REESTRUTURADA E PROFISSIONAL)
+# 4. TELA DE PRODUÇÃO (CORRIGIDA E SEM SOBREPOSIÇÃO)
 # ==========================================
 class ProductionScreen(Screen):
     def __init__(self, **kwargs):
@@ -454,8 +490,8 @@ class ProductionScreen(Screen):
             self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        # Cabeçalho Superior Fixo
-        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='48dp', padding=[10, 5])
+        # 1. Cabeçalho Superior Fixo
+        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='45dp', padding=[10, 5])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
             self.header_bg = Rectangle(size=header.size, pos=header.size)
@@ -467,25 +503,20 @@ class ProductionScreen(Screen):
                   halign='center'))
         self.main_layout.add_widget(header)
 
-        # Scroll vertical principal contendo todo o conteúdo organizado sequencialmente
-        scroll_vertical = ScrollView(size_hint=(1, 1))
-        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=10, padding=10)
-        content.bind(minimum_height=content.setter('height'))
-
-        # 1. BLOCO DE CONFIGURAÇÃO DE TURNO E META (Posicionado corretamente no topo)
-        box_meta_card = BoxLayout(orientation='vertical', size_hint_y=None, height='110dp', padding=8, spacing=6)
+        # 2. Painel de Configuração de Turno e Meta (Fixo no topo da área útil)
+        box_meta_card = BoxLayout(orientation='vertical', size_hint_y=None, height='100dp', padding=8, spacing=4)
         with box_meta_card.canvas.before:
             Color(0.90, 0.87, 0.80, 1)
-            self.bg_card_meta = RoundedRectangle(size=box_meta_card.size, pos=box_meta_card.pos, radius=[8])
+            self.bg_card_meta = RoundedRectangle(size=box_meta_card.size, pos=box_meta_card.pos, radius=[6])
         box_meta_card.bind(size=lambda inst, val: setattr(self.bg_card_meta, 'size', inst.size),
                            pos=lambda inst, val: setattr(self.bg_card_meta, 'pos', inst.pos))
 
-        lbl_meta_tit = Label(text='CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='10.5sp',
+        lbl_meta_tit = Label(text='CONFIGURAÇÃO DO TURNO E META', color=(0.12, 0.14, 0.18, 1), font_size='10sp',
                              bold=True, halign='center')
         lbl_meta_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
         box_meta_card.add_widget(lbl_meta_tit)
 
-        box_turno = BoxLayout(orientation='horizontal', size_hint_y=None, height='30dp', spacing=6)
+        box_turno = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=6)
         self.btn_turno_1 = Button(text='1º Turno (06:00)', background_color=(0.3, 0.3, 0.3, 1), color=(1, 1, 1, 1),
                                   bold=True, font_size='10sp')
         self.btn_turno_2 = Button(text='2º Turno (16:00)', background_color=(0.85, 0.65, 0.1, 1),
@@ -497,14 +528,14 @@ class ProductionScreen(Screen):
         box_turno.add_widget(self.btn_turno_2)
         box_meta_card.add_widget(box_turno)
 
-        box_meta_input = BoxLayout(orientation='horizontal', size_hint_y=None, height='30dp', spacing=6)
+        box_meta_input = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=6)
         perfil_inicial = obter_perfil_atual()
         meta_inicial = str(perfil_inicial.get("meta_hoje", 720) if isinstance(perfil_inicial, dict) else 720)
-        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='12sp', size_hint_y=None,
-                                                height='30dp', halign='center')
+        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='11sp', size_hint_y=None,
+                                                height='28dp', halign='center')
 
         btn_salvar_meta = RoundedButton(text='Aplicar Meta', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None,
-                                        height='30dp')
+                                        height='28dp')
         btn_salvar_meta.color = (1, 1, 1, 1)
         btn_salvar_meta.font_size = '10sp'
         btn_salvar_meta.bold = True
@@ -514,14 +545,9 @@ class ProductionScreen(Screen):
         box_meta_input.add_widget(btn_salvar_meta)
         box_meta_card.add_widget(box_meta_input)
 
-        content.add_widget(box_meta_card)
+        self.main_layout.add_widget(box_meta_card)
 
-        # 2. CABEÇALHO DA TABELA HORA A HORA
-        lbl_tab_tit = Label(text='ACOMPANHAMENTO HORA A HORA', color=(0.12, 0.14, 0.18, 1), font_size='11sp', bold=True,
-                            size_hint_y=None, height='22dp', halign='left')
-        lbl_tab_tit.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        content.add_widget(lbl_tab_tit)
-
+        # 3. Cabeçalho Fixo da Tabela Hora a Hora
         self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='26dp', spacing=1,
                                       size_hint_x=1)
         with self.table_header.canvas.before:
@@ -548,7 +574,12 @@ class ProductionScreen(Screen):
         self.table_header.add_widget(
             Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='8.5sp', halign='center',
                   size_hint_x=0.17))
-        content.add_widget(self.table_header)
+        self.main_layout.add_widget(self.table_header)
+
+        # 4. Scroll apenas para as linhas da tabela (evitando qualquer sobreposição com o topo)
+        scroll_vertical = ScrollView(size_hint=(1, 1))
+        content_scroll = BoxLayout(orientation='vertical', size_hint_y=None, spacing=2, padding=[0, 2])
+        content_scroll.bind(minimum_height=content_scroll.setter('height'))
 
         self.turno_atual = 2
 
@@ -580,20 +611,21 @@ class ProductionScreen(Screen):
         self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=2, size_hint_x=1)
 
         self.construir_linhas_tabela()
-        content.add_widget(self.tabela_linhas_layout)
+        content_scroll.add_widget(self.tabela_linhas_layout)
+        scroll_vertical.add_widget(content_scroll)
+        self.main_layout.add_widget(scroll_vertical)
 
-        # 3. PAINEL DE TOTAIS
-        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', spacing=10, padding=[0, 2])
+        # 5. Painel de Totais e Botões Inferiores Fixos
+        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=10, padding=[10, 2])
         self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='10sp',
                                    halign='center')
         self.lbl_total_neg = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp',
                                    halign='center')
         box_totais.add_widget(self.lbl_total_pos)
         box_totais.add_widget(self.lbl_total_neg)
-        content.add_widget(box_totais)
+        self.main_layout.add_widget(box_totais)
 
-        # 4. BOTÕES DE AÇÃO INFERIORES
-        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='40dp', spacing=6)
+        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='42dp', spacing=6, padding=[10, 4])
         btn_calcular = RoundedButton(text='CALCULAR', bg_color=(0.25, 0.65, 0.85, 1))
         btn_calcular.color = (1, 1, 1, 1);
         btn_calcular.bold = True;
@@ -615,10 +647,8 @@ class ProductionScreen(Screen):
         box_botoes.add_widget(btn_calcular)
         box_botoes.add_widget(btn_salvar)
         box_botoes.add_widget(btn_compartilhar)
-        content.add_widget(box_botoes)
+        self.main_layout.add_widget(box_botoes)
 
-        scroll_vertical.add_widget(content)
-        self.main_layout.add_widget(scroll_vertical)
         self.main_layout.add_widget(CriarBarraNavegacao(ativa='producao'))
         self.add_widget(self.main_layout)
 
@@ -816,7 +846,7 @@ class ProductionScreen(Screen):
         try:
             import urllib.parse
             import webbrowser
-            numero_whatsapp = "5581996974723"
+            numero_whatsapp = "5581996974733"
             texto_codificado = urllib.parse.quote(texto)
             webbrowser.open(f"https://wa.me/{numero_whatsapp}?text={texto_codificado}")
         except Exception:
