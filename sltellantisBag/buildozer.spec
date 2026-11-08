@@ -33,8 +33,7 @@ icon.filename = %(source.dir)s/icones/icone_mybag.png
 presplash.filename = %(source.dir)s/icones/carregamento.1.gif
 
 buildozer appclean
-buildozer -v android debug
-buildozer -v android debug
+
 p4a.branch = v2024.01.21
 
 [buildozer]
