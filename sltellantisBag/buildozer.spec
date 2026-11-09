@@ -26,7 +26,7 @@ requirements = python3,kivy,android,jnius
 
 # (list) Application requirements
 # comma separated e.g. requirements = kivy,python3,kivy_deps,jnius,android
-requirements = python3,kivy,pyjnius,android
+
 
 # (str) Icon of the application
 icon.filename = %(source.dir)s/icones/icone_mybag.png
