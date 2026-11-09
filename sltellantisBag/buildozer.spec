@@ -21,6 +21,8 @@ android.accept_sdk_license = True
 
 # (list) Permissions
 android.permissions = INTERNET, CAMERA
+requirements = python3,kivy,android,jnius
+
 
 # (list) Application requirements
 # comma separated e.g. requirements = kivy,python3,kivy_deps,jnius,android
