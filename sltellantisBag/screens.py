@@ -41,7 +41,45 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.image import Image
 import math
 from kivy.clock import Clock
-
+import os
+import pandas as pd
+from kivy.app import App
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.button import Button
+from kivy.graphics import Color, Rectangle
+import os
+import pandas as pd
+from kivy.app import App
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.button import Button
+from kivy.graphics import Color, Rectangle
+import os
+import pandas as pd
+from kivy.app import App
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.button import Button
+from kivy.graphics import Color, Rectangle
 # Verification de bibliotecas nativas do Android (Leitura de Câmera/QR Code)
 try:
     from jnius import autoclass
@@ -188,140 +226,213 @@ class SplashScreen(Screen):
 # =============================================================================
 # 1. TELA DE LOGIN / BOAS-VINDAS (WelcomeScreen)
 # =============================================================================
+
 class WelcomeScreen(Screen):
     """
-    Tela inicial de autenticação do colaborador.
-    Permite o preenchimento de CPF/Matrícula e Senha, além de direcionar para
-    o cadastro de perfil.
+    Tela de login com suporte a Senha Master, validação no arquivo mybad_banco_dados.csv
+    e redirecionamento para o cadastro.
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
-        # Layout principal vertical
-        self.main_layout = BoxLayout(orientation='vertical')
 
-        # Configuração do fundo dinâmico via Canvas
+        self.main_layout = BoxLayout(orientation='vertical', padding=25, spacing=15)
+
+        # Fundo roxo corporativo da Splash Screen
         with self.main_layout.canvas.before:
-            self.bg_color = Color(0.96, 0.93, 0.88, 1)
+            Color(0.12, 0.08, 0.22, 1)
             self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
-        # ScrollView para evitar corte de conteúdo em telas pequenas
-        scroll = ScrollView(size_hint=(1, 1))
-        content = BoxLayout(orientation='vertical', size_hint_y=None, spacing=18, padding=30)
-        content.bind(minimum_height=content.setter('height'))
+        self.main_layout.add_widget(Widget(size_hint_y=None, height='10dp'))
 
-        # Espaçador superior
-        content.add_widget(Widget(size_hint_y=None, height='20dp'))
-
-        # --- CABEÇALHO / LOGO DO APLICATIVO ---
-        box_logo = BoxLayout(orientation='vertical', size_hint_y=None, height='90dp', spacing=4)
-
-        self.lbl_mybag = Label(text='🛍️ MYBAG', color=(0.12, 0.14, 0.18, 1), font_size='22sp', bold=True, halign='center')
-        self.lbl_mybag.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-
-        self.lbl_stellantis = Label(text='STELLANTIS', color=(0.12, 0.14, 0.18, 1), font_size='14sp', bold=True, halign='center')
-        self.lbl_stellantis.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-
-        box_logo.add_widget(self.lbl_mybag)
-        box_logo.add_widget(self.lbl_stellantis)
-        content.add_widget(box_logo)
-
-        content.add_widget(Widget(size_hint_y=None, height='10dp'))
-
-        # --- CAMPO: CPF / MATRÍCULA ---
-        self.lbl_cpf = Label(text='CPF / Matrícula', color=(0.12, 0.14, 0.18, 1), font_size='12sp', size_hint_y=None, height='22dp', halign='left')
-        self.lbl_cpf.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        content.add_widget(self.lbl_cpf)
-
-        self.input_cpf = TextInput(
-            text='', hint_text='Digite seu CPF ou Matrícula', multiline=False,
-            font_size='13sp', size_hint_y=None, height='45dp', halign='left',
-            padding=[15, 12, 15, 12]
+        # --- LOGOTIPO ---
+        logo_layout = AnchorLayout(anchor_x='center', anchor_y='center', size_hint_y=None, height='120dp')
+        self.img_logo = Image(
+            source='icones/icone_mybag.png',
+            size_hint=(None, None),
+            size=(110, 110),
+            allow_stretch=True,
+            keep_ratio=True
         )
-        content.add_widget(self.input_cpf)
+        logo_layout.add_widget(self.img_logo)
+        self.main_layout.add_widget(logo_layout)
 
-        # --- CAMPO: SENHA ---
-        self.lbl_senha = Label(text='Senha', color=(0.12, 0.14, 0.18, 1), font_size='12sp', size_hint_y=None, height='22dp', halign='left')
-        self.lbl_senha.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-        content.add_widget(self.lbl_senha)
+        # --- TÍTULO ---
+        self.lbl_titulo = Label(
+            text='STELLANTIS BAG',
+            color=(0.95, 0.82, 0.45, 1),
+            font_size='18sp',
+            bold=True,
+            size_hint_y=None,
+            height='25dp',
+            halign='center'
+        )
+        self.lbl_titulo.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        self.main_layout.add_widget(self.lbl_titulo)
+
+        # --- FORMULÁRIO (MATRÍCULA E SENHA) ---
+        form_layout = BoxLayout(orientation='vertical', spacing=12, size_hint_y=None, height='140dp', padding=[15, 0])
+
+        self.input_matricula = TextInput(
+            hint_text='Digite sua Matrícula',
+            multiline=False,
+            size_hint_y=None,
+            height='42dp',
+            padding_x=[12, 12],
+            cursor_color=(0.95, 0.82, 0.45, 1)
+        )
 
         self.input_senha = TextInput(
-            text='', hint_text='Digite sua senha', password=True, multiline=False,
-            font_size='13sp', size_hint_y=None, height='45dp', halign='left',
-            padding=[15, 12, 15, 12]
+            hint_text='Digite sua Senha',
+            password=True,
+            multiline=False,
+            size_hint_y=None,
+            height='42dp',
+            padding_x=[12, 12],
+            cursor_color=(0.95, 0.82, 0.45, 1)
         )
-        content.add_widget(self.input_senha)
 
-        content.add_widget(Widget(size_hint_y=None, height='5dp'))
+        form_layout.add_widget(self.input_matricula)
+        form_layout.add_widget(self.input_senha)
+        self.main_layout.add_widget(form_layout)
 
-        # --- BOTÃO DE ACESSO (ENTRAR) ---
-        self.btn_entrar = RoundedButton(text='Entrar', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None, height='48dp')
-        self.btn_entrar.color = (1, 1, 1, 1)
-        self.btn_entrar.bold = True
-        self.btn_entrar.font_size = '14sp'
+        # --- MENSAGEM DE ERRO ---
+        self.lbl_erro = Label(
+            text='',
+            color=(1, 0.4, 0.4, 1),
+            font_size='12sp',
+            size_hint_y=None,
+            height='25dp',
+            halign='center'
+        )
+        self.lbl_erro.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        self.main_layout.add_widget(self.lbl_erro)
+
+        # --- OPÇÕES ---
+        opcoes_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp', padding=[15, 0])
+
+        lembrar_box = BoxLayout(orientation='horizontal', spacing=8, size_hint_x=0.6)
+        self.chk_lembrar = CheckBox(size_hint_y=None, height='30dp', width='30dp')
+        lbl_lembrar = Label(text='Lembrar-me', color=(0.85, 0.85, 0.9, 1), font_size='12sp', halign='left',
+                            valign='middle')
+        lbl_lembrar.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+
+        lembrar_box.add_widget(self.chk_lembrar)
+        lembrar_box.add_widget(lbl_lembrar)
+
+        self.btn_esqueci = Button(
+            text='Esqueci a senha?',
+            background_normal='',
+            background_color=(0, 0, 0, 0),
+            color=(0.95, 0.82, 0.45, 1),
+            font_size='12sp',
+            size_hint_x=0.4,
+            halign='right'
+        )
+        self.btn_esqueci.bind(on_release=self.esqueci_senha_acao)
+
+        opcoes_layout.add_widget(lembrar_box)
+        opcoes_layout.add_widget(self.btn_esqueci)
+        self.main_layout.add_widget(opcoes_layout)
+
+        self.main_layout.add_widget(Widget())
+
+        # --- BOTÕES DE AÇÃO ---
+        botoes_layout = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None, height='100dp', padding=[15, 0])
+
+        self.btn_entrar = Button(
+            text='ENTRAR',
+            size_hint_y=None,
+            height='42dp',
+            background_normal='',
+            background_color=(0.95, 0.82, 0.45, 1),
+            color=(0.12, 0.08, 0.22, 1),
+            bold=True,
+            font_size='13sp'
+        )
         self.btn_entrar.bind(on_release=self.fazer_login)
-        content.add_widget(self.btn_entrar)
 
-        # --- OPÇÕES INFERIORES: ESQUECI SENHA & CHECKBOX ---
-        box_opcoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp')
+        # Botão de Cadastrar / Inscrever-se ligado corretamente para abrir a tela de perfil/cadastro
+        self.btn_cadastrar = Button(
+            text='CADASTRAR / INSCREVER-SE',
+            size_hint_y=None,
+            height='42dp',
+            background_normal='',
+            background_color=(0.25, 0.20, 0.45, 1),
+            color=(0.95, 0.82, 0.45, 1),
+            bold=True,
+            font_size='12sp'
+        )
+        self.btn_cadastrar.bind(on_release=self.ir_para_cadastro)
 
-        self.lbl_esqueci = Label(text='Esqueci minha senha', color=(0.3, 0.3, 0.3, 1), font_size='11sp', halign='left')
-        self.lbl_esqueci.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        botoes_layout.add_widget(self.btn_entrar)
+        botoes_layout.add_widget(self.btn_cadastrar)
+        self.main_layout.add_widget(botoes_layout)
 
-        box_lembrar = BoxLayout(orientation='horizontal', size_hint_x=None, width='120dp', spacing=5)
-        self.lbl_lembrar = Label(text='Lembrar CPF', color=(0.3, 0.3, 0.3, 1), font_size='11sp', halign='right')
-        self.lbl_lembrar.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
-
-        chk = CheckBox(size_hint_x=None, width='30dp')
-
-        box_lembrar.add_widget(self.lbl_lembrar)
-        box_lembrar.add_widget(chk)
-
-        box_opcoes.add_widget(self.lbl_esqueci)
-        box_opcoes.add_widget(box_lembrar)
-        content.add_widget(box_opcoes)
-
-        content.add_widget(Widget(size_hint_y=None, height='20dp'))
-
-        # --- BOTÃO DE CADASTRO ---
-        self.btn_cadastrar = Button(text='Quero me cadastrar', background_color=(0.25, 0.7, 0.4, 1), size_hint_y=None, height='45dp')
-        self.btn_cadastrar.color = (1, 1, 1, 1)
-        self.btn_cadastrar.bold = True
-        self.btn_cadastrar.font_size = '13sp'
-        self.btn_cadastrar.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'config'))
-        content.add_widget(self.btn_cadastrar)
-
-        scroll.add_widget(content)
-        self.main_layout.add_widget(scroll)
         self.add_widget(self.main_layout)
 
-    def on_enter(self):
-        """Atualiza a paleta de cores ao entrar na tela com base no tema ativo."""
-        paleta = obter_paleta_atual()
-        self.bg_color.rgba = paleta['bg']
-
-        cor_texto = (1, 1, 1, 1) if paleta.get('dark_mode', False) else (0.12, 0.14, 0.18, 1)
-        cor_secundaria = (0.8, 0.8, 0.8, 1) if paleta.get('dark_mode', False) else (0.3, 0.3, 0.3, 1)
-
-        self.lbl_mybag.color = (1.0, 0.82, 0.0, 1)
-        self.lbl_stellantis.color = cor_texto
-        self.lbl_cpf.color = cor_texto
-        self.lbl_senha.color = cor_texto
-        self.lbl_esqueci.color = cor_secundaria
-        self.lbl_lembrar.color = cor_secundaria
-
     def fazer_login(self, instance):
-        """Valida a tentativa de acesso e navega para a tela 'inicio'."""
-        App.get_running_app().sm.current = 'inicio'
+        """Valida se é a senha master ou se consta no arquivo mybad_banco_dados.csv"""
+        matricula_digitada = self.input_matricula.text.strip()
+        senha_digitada = self.input_senha.text.strip()
+
+        if not matricula_digitada or not senha_digitada:
+            self.lbl_erro.text = "Preencha a matrícula e a senha!"
+            return
+
+        # 1. VALIDAÇÃO DA SENHA MASTER
+        if matricula_digitada == "124405" and senha_digitada == "1920":
+            self.lbl_erro.text = ""
+            print("Login autorizado via Senha Master!")
+            App.get_running_app().sm.current = 'inicio'
+            return
+
+        # 2. VALIDAÇÃO NO BANCO CSV (mybad_banco_dados.csv)
+        caminho_csv = 'mybad_banco_dados.csv'
+
+        if not os.path.exists(caminho_csv):
+            self.lbl_erro.text = "Erro: Arquivo mybad_banco_dados.csv não encontrado!"
+            return
+
+        try:
+            # Lê o arquivo CSV usando pandas
+            df = pd.read_csv(caminho_csv)
+            df.columns = [str(col).strip().lower() for col in df.columns]
+
+            if 'matricula' not in df.columns or 'senha' not in df.columns:
+                self.lbl_erro.text = "Erro: O CSV precisa conter as colunas 'matricula' e 'senha'."
+                return
+
+            df['matricula'] = df['matricula'].astype(str).str.strip()
+            df['senha'] = df['senha'].astype(str).str.strip()
+
+            # Checa se o usuário existe na base
+            valido = df[(df['matricula'] == matricula_digitada) & (df['senha'] == senha_digitada)]
+
+            if not valido.empty:
+                self.lbl_erro.text = ""
+                App.get_running_app().sm.current = 'inicio'
+            else:
+                self.lbl_erro.text = "Matrícula ou senha inválidas!"
+
+        except Exception as e:
+            self.lbl_erro.text = "Erro ao processar o banco de dados CSV."
+
+    def ir_para_cadastro(self, instance):
+        """Redireciona para a tela de cadastro/usuário."""
+        # Se a sua tela de cadastro/perfil estiver registrada no main.py com outro nome (ex: 'user_profile' ou 'cadastro'), ajuste aqui:
+        App.get_running_app().sm.current = 'user_profile'
+
+    def esqueci_senha_acao(self, instance):
+        self.lbl_erro.text = "Use a Senha Master ou contate o suporte."
 
     def _update_bg(self, instance, value):
-        """Redimensiona o retângulo de fundo de acordo com o tamanho da janela."""
-        self.bg_rect.size = instance.size
-        self.bg_rect.pos = instance.pos
-
-
-# =============================================================================
+        self.bg_rc = getattr(self, 'bg_rect', None)
+        if self.bg_rc:
+            self.bg_rc.size = instance.size
+            self.bg_rc.pos = instance.pos
+#=================================
 # 2. TELA DE INÍCIO / DASHBOARD OPERACIONAL (HomeScreen)
 # =============================================================================
 class HomeScreen(Screen):
@@ -1021,18 +1132,28 @@ class ConfigScreen(Screen):
         btn_perfil.bind(on_release=lambda x: setattr(self.manager, 'current', 'userprofile'))
 
         # Botão -> Redireciona para Escolha de Temas ('theme_screen')
-        btn_cores = RoundedButton(text='🎨 Alterar Cores e Tema', bg_color=(0.25, 0.65, 0.85, 1), size_hint_y=None, height='48dp')
-        btn_cores.color = (1, 1, 1, 1); btn_cores.bold = True; btn_cores.font_size = '13sp'
-        btn_perfil.bind(on_release=lambda x: setattr(App.get_running_app().sm, 'current', 'userprofile'))
+        # Criação correta do botão de alterar tema
+        btn_tema = RoundedButton(
+            text='🎨 Alterar Cores e Tema',
+            bg_color=(0.25, 0.65, 0.85, 1),
+            size_hint_y=None,
+            height='45dp'
+        )
+        btn_tema.color = (1, 1, 1, 1)
+        btn_tema.bold = True
+        btn_tema.font_size = '12sp'
 
-        # Botão -> Ação de Alertas
-        btn_notif = RoundedButton(text='🔔 Notificações e Alertas', bg_color=(0.25, 0.7, 0.4, 1), size_hint_y=None, height='48dp')
-        btn_notif.color = (1, 1, 1, 1); btn_notif.bold = True; btn_notif.font_size = '13sp'
-        btn_notif.bind(on_release=self.acao_notificacoes)
+        # Função que realiza a navegação para a tela de temas
+        def ir_para_tema(instance):
+            self.manager.current = 'theme'
 
+        # Vincula o clique do botão à função de mudança de tela
+        btn_tema.bind(on_release=ir_para_tema)
+
+        # Adiciona o botão dentro do seu layout de conteúdo
+        content.add_widget(btn_tema)
         content.add_widget(btn_perfil)
-        content.add_widget(btn_cores)
-        content.add_widget(btn_notif)
+
 
         scroll.add_widget(content)
         layout.add_widget(scroll)
