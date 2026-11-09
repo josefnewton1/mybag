@@ -20,6 +20,9 @@ android.archs = arm64-v8a, armeabi-v7a
 android.accept_sdk_license = True
 #android.permissions = INTERNET
 
+# (list) Application requirements
+# Add Python libraries that your app uses
+requirements = python3,kivy,android,jnius,pandas,openpyxl
 [buildozer]
 
 log_level = 2
