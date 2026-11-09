@@ -18,7 +18,8 @@ android.minapi = 21
 android.archs = arm64-v8a
 android.accept_sdk_license = True
 #android.permissions = INTERNET
-
+# (int) Android NDK version to use
+android.ndk = 25b
 # (list) Permissions
 android.permissions = INTERNET, CAMERA
 requirements = python3,kivy,android,jnius
