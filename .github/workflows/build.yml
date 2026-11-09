@@ -50,7 +50,20 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
+    - name: Limpar build anterior corrompido
+      run: |
+        # Se você estiver dentro de uma subpasta, ajuste o caminho. Se o buildozer.spec estiver na raiz, remova o 'cd'.
+        cd sltellantisBag || true
+        rm -rf .buildozer/android/platform/build-*
+
     - name: Build with Buildozer
       run: |
-        cd sltellantisBag
+        # Entra na pasta do projeto onde está o buildozer.spec (ajuste se estiver na raiz)
+        cd sltellantisBag || true
         buildozer -v android debug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package-apk
+        path: sltellantisBag/bin/*.apk
