@@ -1,3 +1,4 @@
+
 name: Compile APK Android com Buildozer
 
 on:
@@ -41,9 +42,19 @@ jobs:
       working-directory: sltellantisBag
       run: |
         buildozer -v android debug
+        - name: Cache Buildozer global directories
+        uses: actions/cache@v3
+        with:
+          path: |
+            .buildozer
+            ~/.buildozer
+          key: ${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v1
+          restore-keys: |
+            ${{ runner.os }}-
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: pacotes-apk
         path: sltellantisBag/bin/*.apk
+
