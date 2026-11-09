@@ -1,60 +1,56 @@
-
 name: Compile APK Android com Buildozer
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'zulu'
-        java-version: '17'
-
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          build-essential ccache git zip unzip autoconf automake libtool pkg-config \
-          libssl-dev zlib1g-dev libffi-dev libbz2-dev libreadline-dev \
-          libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-          xz-utils tk-dev libxml2-dev libxmlsec1-dev liblzma-dev
+          python3-pip \
+          build-essential \
+          git \
+          libffi-dev \
+          libssl-dev \
+          zlib1g-dev \
+          openjdk-17-jdk \
+          unzip \
+          ant \
+          autoconf \
+          libtool \
+          pkg-config
 
     - name: Install Buildozer and Cython
       run: |
         pip install --upgrade pip
-        pip install --upgrade cython==0.29.36
-        pip install --upgrade buildozer
+        pip install --upgrade buildozer cython==0.29.36
+
+    - name: Cache Buildozer directories
+      uses: actions/cache@v3
+      with:
+        path: |
+          .buildozer
+          ~/.buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
 
     - name: Build with Buildozer
-      working-directory: sltellantisBag
       run: |
+        cd sltellantisBag
         buildozer -v android debug
-        - name: Cache Buildozer global directories
-        uses: actions/cache@v3
-        with:
-          path: |
-            .buildozer
-            ~/.buildozer
-          key: ${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v1
-          restore-keys: |
-            ${{ runner.os }}-
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: pacotes-apk
-        path: sltellantisBag/bin/*.apk
-
