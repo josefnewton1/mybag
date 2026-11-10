@@ -55,7 +55,8 @@ jobs:
       run: |
         cd sltellantisBag || true
         rm -rf .buildozer/android/platform/build-*
-
+        rm -rf .gradle ~/.gradle
+   
     - name: Build with Buildozer
       run: |
         cd sltellantisBag || true
