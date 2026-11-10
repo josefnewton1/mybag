@@ -9,6 +9,8 @@ source.include_exts = py,png,jpg,kv,atlas,json,csv
 
 version = 0.1
 
+# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
+log_level = 2
 
 orientation = portrait
 fullscreen = 0
