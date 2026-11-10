@@ -32,8 +32,6 @@ requirements = python3,kivy,android,jnius
 # (str) Icon of the application
 icon.filename = %(source.dir)s/icones/icone_mybag.png
 
-# (str) Presplash of the application (Tela de carregamento inicial)
-presplash.filename = %(source.dir)s/icones/carregamento.1.gif
 
 buildozer appclean
 
