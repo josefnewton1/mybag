@@ -67,11 +67,11 @@ jobs:
         cd sltellantisBag || true
         rm -rf .buildozer/android/platform/build-*
         rm -rf .gradle ~/.gradle
-   
+       
     - name: Build with Buildozer
-      run: |
-        cd sltellantisBag || true
-        buildozer -v android debug
+     run: |
+            cd sltellantisBag || true
+            buildozer --debug android debug log_level=2
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
