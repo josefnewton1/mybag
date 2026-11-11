@@ -7,36 +7,21 @@ package.domain = org.stellantis
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,csv
 
-version = 0.1
+version = 0.2
 
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-log_level = 2
+requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,android
 
 orientation = portrait
 fullscreen = 0
 
-android.api = 33
-android.minapi = 21
-android.archs = arm64-v8a
-android.accept_sdk_license = True
-#android.permissions = INTERNET
-# (int) Android NDK version to use
-android.ndk = 25b
-# (list) Permissions
-android.permissions = INTERNET, CAMERA
-requirements = python3,kivy,android,jnius
-
-
-# (list) Application requirements
-# comma separated e.g. requirements = kivy,python3,kivy_deps,jnius,android
-
-
-# (str) Icon of the application
 icon.filename = %(source.dir)s/icones/icone_mybag.png
 
-buildozer -v --debug android debug
-
-buildozer appclean
+android.api = 33
+android.minapi = 21
+android.ndk = 25b
+android.archs = arm64-v8a
+android.accept_sdk_license = True
+android.permissions = INTERNET
 
 p4a.branch = v2024.01.21
 
