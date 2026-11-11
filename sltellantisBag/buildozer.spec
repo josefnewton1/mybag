@@ -34,6 +34,7 @@ requirements = python3,kivy,android,jnius
 # (str) Icon of the application
 icon.filename = %(source.dir)s/icones/icone_mybag.png
 
+buildozer -v --debug android debug
 
 buildozer appclean
 
