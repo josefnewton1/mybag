@@ -18,66 +18,43 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Fix DNS / Network Resolvers
-      run: |
-        echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-        echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          python3-pip \
-          build-essential \
-          git \
-          libffi-dev \
-          libssl-dev \
-          zlib1g-dev \
-          openjdk-17-jdk \
-          unzip \
-          ant \
-          autoconf \
-          automake \
-          libtool \
-          pkg-config
+          build-essential ccache git zip unzip python3-pip \
+          libssl-dev zlib1g-dev libffi-dev libltdl-dev \
+          libncurses5-dev autoconf automake libtool pkg-config cmake
 
     - name: Install Buildozer and Cython
       run: |
         pip install --upgrade pip
         pip install --upgrade buildozer cython==0.29.36
 
-    - name: Set up JDK 11
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '11'
-
-    - name: Cache Buildozer directories
-      uses: actions/cache@v3
+    - name: Cache Buildozer
+      uses: actions/cache@v4
       with:
         path: |
-          .buildozer
+          sltellantisBag/.buildozer
           ~/.buildozer
-        key: ${{ runner.os }}-buildozer-v3-${{ hashFiles('buildozer.spec') }}
+        key: ${{ runner.os }}-buildozer-v4-${{ hashFiles('sltellantisBag/buildozer.spec') }}
         restore-keys: |
-          ${{ runner.os }}-buildozer-v3-
-
-    - name: Limpar build anterior corrompido
-      run: |
-        cd sltellantisBag || true
-        rm -rf .buildozer/android/platform/build-*
-        rm -rf .gradle ~/.gradle
+          ${{ runner.os }}-buildozer-v4-
 
     - name: Build with Buildozer
+      working-directory: sltellantisBag
       run: |
-            cd sltellantisBag || true
-            export ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b
-            export ANDROID_NDK=$HOME/.buildozer/android/platform/android-ndk-r25b
-            unset GRADLE_HOME
-            buildozer --debug android debug log_level=2
+        buildozer -v android debug
 
-    - name: Upload APK Artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: package-apk
         path: sltellantisBag/bin/*.apk
+        if-no-files-found: error
