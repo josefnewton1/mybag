@@ -20,8 +20,8 @@ jobs:
 
     - name: Fix DNS / Network Resolvers
       run: |
-            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-            echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
+        echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+        echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
 
     - name: Install dependencies
       run: |
@@ -51,7 +51,7 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '11'
-        
+
     - name: Cache Buildozer directories
       uses: actions/cache@v3
       with:
@@ -67,11 +67,11 @@ jobs:
         cd sltellantisBag || true
         rm -rf .buildozer/android/platform/build-*
         rm -rf .gradle ~/.gradle
-       
+
     - name: Build with Buildozer
-     run: |
-            cd sltellantisBag || true
-            buildozer --debug android debug log_level=2
+      run: |
+        cd sltellantisBag || true
+        buildozer --debug android debug log_level=2
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
