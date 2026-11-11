@@ -68,12 +68,13 @@ jobs:
         rm -rf .buildozer/android/platform/build-*
         rm -rf .gradle ~/.gradle
 
-    - name: Build with Buildozer
-      run: |
-            cd sltellantisBag || true
-            export ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b
-            export ANDROID_NDK=$HOME/.buildozer/android/platform/android-ndk-r25b
-            buildozer --debug android debug log_level=2
+        - name: Build with Buildozer
+              run: |
+                cd sltellantisBag || true
+                export ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b
+                export ANDROID_NDK=$HOME/.buildozer/android/platform/android-ndk-r25b
+                unset GRADLE_HOME
+                buildozer --debug android debug log_level=2
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
