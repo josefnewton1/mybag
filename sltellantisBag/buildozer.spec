@@ -4,7 +4,7 @@ title = Meu App StellantisaBag
 package.name = stellantisabag
 package.domain = org.stellantis
 
-source.dir = .
+source.dir = sltellantisBag
 source.include_exts = py,png,jpg,kv,atlas,json,csv
 
 version = 0.2
