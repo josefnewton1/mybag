@@ -46,11 +46,12 @@ jobs:
         key: ${{ runner.os }}-buildozer-v4-${{ hashFiles('sltellantisBag/buildozer.spec') }}
         restore-keys: |
           ${{ runner.os }}-buildozer-v4-
-
+    
     - name: Build with Buildozer
-      working-directory: sltellantisBag
-      run: |
-        buildozer -v android debug
+      uses: ArtemSBulgakov/buildozer-action@v1
+      with:
+          command: buildozer -v android debug
+        working-directory: sltellantisBag
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
