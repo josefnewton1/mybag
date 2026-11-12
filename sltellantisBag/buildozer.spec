@@ -4,9 +4,9 @@ title = Meu App StellantisaBag
 package.name = stellantisabag
 package.domain = org.stellantis
 
-source.dir = sltellantisBag
-source.include_exts = py,png,jpg,kv,atlas,json,csv
 
+source.include_exts = py,png,jpg,kv,atlas,json,csv
+source.dir = sltellantisBag
 version = 0.2
 
 requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,android
