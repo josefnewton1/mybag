@@ -19,6 +19,12 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -35,8 +41,7 @@ jobs:
             libncurses5-dev \
             libncursesw5-dev \
             libffi-dev \
-            libssl-dev \
-            openjdk-17-jdk
+            libssl-dev
 
       - name: Upgrade pip and install buildozer & Cython
         run: |
@@ -49,14 +54,14 @@ jobs:
           path: |
             ~/.buildozer
             sltellantisBag/.buildozer
-          key: ${{ runner.os }}-buildozer-v4-${{ hashFiles('sltellantisBag/buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-v5-${{ hashFiles('sltellantisBag/buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v4-
+            ${{ runner.os }}-buildozer-v5-
 
       - name: Build with Buildozer
         working-directory: sltellantisBag
         run: |
-          yes | buildozer -v android debug
+          buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
