@@ -54,9 +54,8 @@ jobs:
 
       - name: Build with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1
-        working-directory: sltellantisBag
         with:
-          command: buildozer -v android debug
+          command: cd sltellantisBag && buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v3
