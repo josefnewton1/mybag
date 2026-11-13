@@ -3,7 +3,7 @@ from kivy.uix.screenmanager import ScreenManager
 from screens import (
     WelcomeScreen, HomeScreen, ReportsScreen, ProductionScreen,
     SupportScreen, ConfigScreen, ThemeScreen, UserProfileScreen,
-    ChecagemScreen, SplashScreen
+    ChecagemScreen,
 )
 
 class MyBagApp(App):
@@ -12,7 +12,6 @@ class MyBagApp(App):
         self.sm = ScreenManager()
 
         # 1. Adicionamos todas as telas primeiro
-        self.sm.add_widget(SplashScreen(name='splash'))
         self.sm.add_widget(WelcomeScreen(name='welcome'))
         self.sm.add_widget(HomeScreen(name='inicio'))
         self.sm.add_widget(ReportsScreen(name='relatorios'))
@@ -24,7 +23,7 @@ class MyBagApp(App):
         self.sm.add_widget(ChecagemScreen(name='checagem'))
 
         # 2. Definimos a tela inicial por último com segurança
-        self.sm.current = 'splash'
+        self.sm.current = 'welcome'
 
         return self.sm
 
