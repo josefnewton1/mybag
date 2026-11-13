@@ -28,7 +28,9 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.core.clipboard import Clipboard
 from kivy.utils import platform
-from kivy.graphics import RoundedRectangle
+from kivy.graphics import Color, Rectangle, Ellipse, RoundedRectangle, PushMatrix, PopMatrix, Rotate
+import math
+from kivy.clock import Clock
 import os
 import pandas as pd
 from kivy.app import App
@@ -54,10 +56,137 @@ except ImportError:
 from database import DADOS_APP, obter_perfil_atual, salvar_dados_gerais, obter_paleta_atual
 from components import CircularAvatar, RoundedButton, CriarBarraNavegacao, abrir_seletor_foto
 
-from kivy.uix.screenmanager import Screen
 
 class SplashScreen(Screen):
-    pass
+    """
+    Tela de carregamento inicial (Splash Screen) com a imagem centralizada,
+    barra de progresso animada e ícone giratório.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.main_layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        # Fundo principal com tom roxo escuro corporativo
+        with self.main_layout.canvas.before:
+            self.bg_color = Color(0.12, 0.08, 0.22, 1)
+            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
+        self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
+
+        # Espaçador superior leve
+        self.main_layout.add_widget(Widget(size_hint_y=None, height='30dp'))
+
+        # --- ÁREA CENTRAL COM A SUA IMAGEM (icone_mybag.png) ---
+        centro_layout = AnchorLayout(anchor_x='center', anchor_y='center', size_hint_y=None, height='240dp')
+
+        self.img_logo = Image(
+            source='icones/icone_mybag.png',
+            size_hint=(None, None),
+            size=(220, 220),
+            allow_stretch=True,
+            keep_ratio=True
+        )
+        centro_layout.add_widget(self.img_logo)
+        self.main_layout.add_widget(centro_layout)
+
+        # Espaçador flexível entre o logo e a barra
+        self.main_layout.add_widget(Widget())
+
+        # --- BARRA DE PROGRESSO ANIMADA ---
+        self.box_progress = BoxLayout(orientation='vertical', size_hint_y=None, height='35dp', padding=[60, 0],
+                                      spacing=5)
+
+        with self.box_progress.canvas.before:
+            Color(0.25, 0.22, 0.35, 1)
+            self.barra_fundo = RoundedRectangle(size=(260, 8), pos=(0, 0), radius=[4])
+            Color(0.95, 0.82, 0.45, 1)
+            self.progresso_atual = 0.0
+            self.barra_preenchida = RoundedRectangle(size=(0, 8), pos=(0, 0), radius=[4])
+
+        self.box_progress.bind(size=self._update_barra_pos, pos=self._update_barra_pos)
+        self.main_layout.add_widget(self.box_progress)
+
+        # --- ÍCONE GIRATÓRIO E TEXTO INFERIOR ---
+        self.box_inferior = BoxLayout(orientation='vertical', size_hint_y=None, height='80dp', spacing=8)
+
+        with self.box_inferior.canvas.before:
+            PushMatrix()
+            self.rot_cent = Rotate(angle=0, origin=(0, 0))
+            Color(0.95, 0.82, 0.45, 1)
+            self.icone_pontos = []
+            for i in range(8):
+                self.icone_pontos.append(Ellipse(size=(5, 5), pos=(0, 0)))
+            PopMatrix()
+
+        self.box_inferior.bind(size=self._update_icone_pos, pos=self._update_icone_pos)
+
+        self.lbl_loading = Label(
+            text='LOADING MY BAG...',
+            color=(0.75, 0.75, 0.8, 1),
+            font_size='11sp',
+            bold=True,
+            halign='center'
+        )
+        self.lbl_loading.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+
+        self.box_inferior.add_widget(Widget(size_hint_y=None, height='20dp'))
+        self.box_inferior.add_widget(self.lbl_loading)
+        self.main_layout.add_widget(self.box_inferior)
+
+        self.add_widget(self.main_layout)
+
+    def on_enter(self):
+        """Inicia a animação de carregamento e rotação."""
+        self.progresso_atual = 0.0
+        self.anim_event = Clock.schedule_interval(self.atualizar_animacao, 1 / 60.0)
+
+    def atualizar_animacao(self, dt):
+        """Atualiza o preenchimento da barra e o giro do ícone a cada frame."""
+        if self.progresso_atual < 1.0:
+            self.progresso_atual += dt / 2.8
+            if self.progresso_atual > 1.0:
+                self.progresso_atual = 1.0
+
+            largura_max = 260
+            self.barra_preenchida.size = (largura_max * self.progresso_atual, 8)
+        else:
+            Clock.unschedule(self.anim_event)
+            Clock.schedule_once(self.ir_para_login, 0.4)
+
+        self.rot_cent.angle -= 100 * dt
+
+    def ir_para_login(self, dt):
+        """Transiciona para a tela de login."""
+        App.get_running_app().sm.current = 'welcome'
+
+    def _update_bg(self, instance, value):
+        self.bg_rect.size = instance.size
+        self.bg_rect.pos = instance.pos
+
+    def _update_barra_pos(self, instance, value):
+        largura_barra = 260
+        x_pos = instance.center_x - (largura_barra / 2)
+        y_pos = instance.center_y + 2
+        self.barra_fundo.size = (largura_barra, 8)
+        self.barra_fundo.pos = (x_pos, y_pos)
+        self.barra_preenchida.pos = (x_pos, y_pos)
+
+    def _update_icone_pos(self, instance, value):
+        cx, cy = instance.center_x, instance.center_y + 12
+        self.rot_cent.origin = (cx, cy)
+
+        raio = 12
+        for i, el in enumerate(self.icone_pontos):
+            ang = i * (360 / len(self.icone_pontos))
+            rad = math.radians(ang)
+            px = cx + raio * math.cos(rad) - 2.5
+            py = cy + raio * math.sin(rad) - 2.5
+            el.pos = (px, py)
+
+    def on_leave(self):
+        """Limpa o agendamento ao sair da tela."""
+        if hasattr(self, 'anim_event'):
+            Clock.unschedule(self.anim_event)
 # =============================================================================
 # 1. TELA DE LOGIN / BOAS-VINDAS (WelcomeScreen)
 # =============================================================================
