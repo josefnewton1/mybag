@@ -27,22 +27,23 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            build-essential \
-            git \
-            zip \
-            unzip \
-            autoconf \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libffi-dev \
-            libssl-dev
-
+            sudo apt-get update
+            sudo apt-get install -y \
+              python3-pip \
+              build-essential \
+              git \
+              zip \
+              unzip \
+              autoconf \
+              libtool \
+              pkg-config \
+              zlib1g-dev \
+              libncurses5-dev \
+              libncursesw5-dev \
+              libffi-dev \
+              libssl-dev \
+              gettext \
+              autopoint
       - name: Upgrade pip and install buildozer & Cython
         run: |
           pip install --upgrade pip
