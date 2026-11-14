@@ -5,6 +5,7 @@ from screens import (
     SupportScreen, ConfigScreen, ThemeScreen, UserProfileScreen,
     ChecagemScreen, SplashScreen)
 
+
 class MyBagApp(App):
     def build(self):
         self.title = 'MyBag - Sistema de Produção'
