@@ -651,14 +651,9 @@ class ReportsScreen(Screen):
 # 4. TELA DE PRODUÇÃO / APONTAMENTO HORA A HORA (ProductionScreen)
 # =============================================================================
 class ProductionScreen(Screen):
-    """
-    Tela principal de registro industrial de montagem de chicotes elétricos.
-    Calcula hora a hora a quantidade produzida, a variação em relação à meta (Delta),
-    permite alternar turnos, ajustar metas e exportar relatórios via WhatsApp.
-    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.main_layout = BoxLayout(orientation='vertical', padding=4, spacing=2)
+        self.main_layout = BoxLayout(orientation='vertical', padding=[4, 2, 4, 2], spacing=3)
 
         with self.main_layout.canvas.before:
             self.bg_color = Color(0.96, 0.93, 0.88, 1)
@@ -666,39 +661,55 @@ class ProductionScreen(Screen):
         self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
 
         # Header Superior
-        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='38dp', padding=[10, 2])
+        header = BoxLayout(orientation='horizontal', size_hint_y=None, height='36dp', padding=[8, 2])
         with header.canvas.before:
             Color(0.12, 0.14, 0.18, 1)
-            self.header_bg = Rectangle(size=header.size, pos=header.size)
+            self.header_bg = Rectangle(size=header.size, pos=header.pos)
         header.bind(size=lambda inst, val: setattr(self.header_bg, 'size', inst.size),
                     pos=lambda inst, val: setattr(self.header_bg, 'pos', inst.pos))
 
-        header.add_widget(Label(text='PAINEL DE CONTROLE - PRODUÇÃO', color=(1.0, 0.82, 0.0, 1), font_size='12sp', bold=True, halign='center'))
+        header.add_widget(Label(
+            text='PAINEL DE CONTROLE - PRODUÇÃO',
+            color=(1.0, 0.82, 0.0, 1),
+            font_size='12sp',
+            bold=True,
+            halign='center'
+        ))
         self.main_layout.add_widget(header)
 
-        # --- CABEÇALHO DA TABELA ---
-        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=1, size_hint_x=1)
-        with self.table_header.canvas.before:
-            Color(0.82, 0.78, 0.70, 1)
-            self.bg_th = Rectangle(size=self.table_header.size, pos=self.table_header.pos)
-        self.table_header.bind(size=lambda inst, val: setattr(self.bg_th, 'size', inst.size),
-                               pos=lambda inst, val: setattr(self.bg_th, 'pos', inst.pos))
+        # --- CONTAINER DA PLANILHA ESTILO EXCEL (SEM ROLAGEM) ---
+        self.excel_container = BoxLayout(orientation='vertical', size_hint=(1, 1), spacing=0)
 
-        self.table_header.add_widget(Label(text='HORA', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.24))
-        self.table_header.add_widget(Label(text='Meta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.12))
-        self.table_header.add_widget(Label(text='Cap.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.12))
-        self.table_header.add_widget(Label(text='Res.', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.18))
-        self.table_header.add_widget(Label(text='Prod.', color=(0.1, 0.45, 0.2, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.17))
-        self.table_header.add_widget(Label(text='Delta', color=(0.12, 0.14, 0.18, 1), bold=True, font_size='9sp', halign='center', size_hint_x=0.17))
-        self.main_layout.add_widget(self.table_header)
+        # Cabeçalho da Planilha
+        self.table_header = BoxLayout(orientation='horizontal', size_hint_y=None, height='28dp', spacing=0)
+        colunas_cabecalho = [
+            ('HORA', 0.25),
+            ('Meta', 0.12),
+            ('Cap.', 0.12),
+            ('Res.', 0.18),
+            ('Prod.', 0.17),
+            ('Delta', 0.16),
+        ]
+        for titulo, largura in colunas_cabecalho:
+            celula_header = self._criar_celula_excel(
+                widget=Label(
+                    text=titulo,
+                    color=(1, 1, 1, 1),
+                    bold=True,
+                    font_size='9.5sp',
+                    halign='center',
+                    valign='middle'
+                ),
+                largura_hint=largura,
+                cor_fundo=(0.16, 0.34, 0.24, 1),  # Verde escuro estilo Excel
+                cor_borda=(0.75, 0.78, 0.76, 1)
+            )
+            self.table_header.add_widget(celula_header)
 
-        # --- CORPO DA TABELA (HORÁRIOS DOS TURNOS) ---
-        scroll_vertical = ScrollView(size_hint=(1, 1))
-        content_scroll = BoxLayout(orientation='vertical', size_hint_y=None, spacing=2, padding=[0, 0])
-        content_scroll.bind(minimum_height=content_scroll.setter('height'))
+        self.excel_container.add_widget(self.table_header)
 
+        # Dados dos Turnos
         self.turno_atual = 2
-        # Matriz de dados para o 2º Turno (Horário, Meta Hora, Meta Acumulada)
         self.dados_turno_2 = [
             ("16:00-17:00", 100, 100), ("17:00-18:00", 100, 200),
             ("18:15-19:00", 67, 267),  ("19:00-19:15", 19, 286),
@@ -706,7 +717,6 @@ class ProductionScreen(Screen):
             ("22:00-23:00", 100, 553), ("23:15-00:00", 67, 620),
             ("00:00-01:09", 100, 720),
         ]
-        # Matriz de dados para o 1º Turno
         self.dados_turno_1 = [
             ("06:00-07:00", 100, 100), ("07:00-08:00", 100, 200),
             ("08:15-09:00", 67, 267),  ("09:00-09:15", 19, 286),
@@ -715,33 +725,43 @@ class ProductionScreen(Screen):
             ("14:30-15:43", 100, 720),
         ]
 
+        # Corpo da Planilha (ocupa todo o espaço vertical restante automaticamente)
         self.linhas_widgets = []
-        self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=2, size_hint_x=1)
+        self.tabela_linhas_layout = BoxLayout(orientation='vertical', size_hint=(1, 1), spacing=0)
         self.construir_linhas_tabela()
 
-        content_scroll.add_widget(self.tabela_linhas_layout)
-        scroll_vertical.add_widget(content_scroll)
-        self.main_layout.add_widget(scroll_vertical)
+        self.excel_container.add_widget(self.tabela_linhas_layout)
+        self.main_layout.add_widget(self.excel_container)
 
         # --- SELEÇÃO DE TURNO E AJUSTE DE META ---
-        box_config_inferior = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', padding=[6, 2], spacing=6)
+        box_config_inferior = BoxLayout(orientation='horizontal', size_hint_y=None, height='32dp', padding=[4, 2], spacing=5)
         with box_config_inferior.canvas.before:
             Color(0.90, 0.87, 0.80, 1)
             self.bg_card_meta = RoundedRectangle(size=box_config_inferior.size, pos=box_config_inferior.pos, radius=[6])
         box_config_inferior.bind(size=lambda inst, val: setattr(self.bg_card_meta, 'size', inst.size),
                                  pos=lambda inst, val: setattr(self.bg_card_meta, 'pos', inst.pos))
 
-        self.btn_turno_1 = Button(text='1º Turno', background_color=(0.25, 0.3, 0.4, 1), color=(1, 1, 1, 1), bold=True, font_size='9sp', size_hint_x=0.25)
-        self.btn_turno_2 = Button(text='2º Turno', background_color=(0.08, 0.16, 0.36, 1), color=(1, 1, 1, 1), bold=True, font_size='9sp', size_hint_x=0.25)
+        self.btn_turno_1 = Button(text='1º Turno', background_color=(0.25, 0.3, 0.4, 1), color=(1, 1, 1, 1), bold=True, font_size='9.5sp', size_hint_x=0.25)
+        self.btn_turno_2 = Button(text='2º Turno', background_color=(0.08, 0.16, 0.36, 1), color=(1, 1, 1, 1), bold=True, font_size='9.5sp', size_hint_x=0.25)
         self.btn_turno_1.bind(on_release=lambda x: self.mudar_turno(1))
         self.btn_turno_2.bind(on_release=lambda x: self.mudar_turno(2))
 
         perfil_inicial = obter_perfil_atual()
         meta_inicial = str(perfil_inicial.get("meta_hoje", 720) if isinstance(perfil_inicial, dict) else 720)
-        self.input_meta_selecionada = TextInput(text=meta_inicial, multiline=False, font_size='10sp', size_hint_x=0.25, halign='center', padding=[2, 6, 2, 6])
+        self.input_meta_selecionada = TextInput(
+            text=meta_inicial,
+            multiline=False,
+            font_size='10.5sp',
+            size_hint_x=0.25,
+            halign='center',
+            input_filter='int',
+            padding=[2, 6, 2, 6]
+        )
 
         btn_salvar_meta = RoundedButton(text='Meta', bg_color=(0.25, 0.65, 0.85, 1), size_hint_x=0.25)
-        btn_salvar_meta.color = (1, 1, 1, 1); btn_salvar_meta.font_size = '9sp'; btn_salvar_meta.bold = True
+        btn_salvar_meta.color = (1, 1, 1, 1)
+        btn_salvar_meta.font_size = '9.5sp'
+        btn_salvar_meta.bold = True
         btn_salvar_meta.bind(on_release=self.aplicar_filtro_meta)
 
         box_config_inferior.add_widget(self.btn_turno_1)
@@ -751,26 +771,26 @@ class ProductionScreen(Screen):
         self.main_layout.add_widget(box_config_inferior)
 
         # --- PAINEL DE TOTAIS E PERDAS ---
-        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='22dp', spacing=10, padding=[10, 1])
-        self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='9.5sp', halign='center')
-        self.lbl_total_neg = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='9.5sp', halign='center')
+        box_totais = BoxLayout(orientation='horizontal', size_hint_y=None, height='22dp', spacing=10, padding=[8, 1])
+        self.lbl_total_pos = Label(text='Positivo: +0', color=(0, 0.5, 0, 1), bold=True, font_size='10sp', halign='center')
+        self.lbl_total_neg = Label(text='Perdas Totais: 0', color=(0.8, 0, 0, 1), bold=True, font_size='10sp', halign='center')
         box_totais.add_widget(self.lbl_total_pos)
         box_totais.add_widget(self.lbl_total_neg)
         self.main_layout.add_widget(box_totais)
 
         # --- BOTÕES DE AÇÃO ---
-        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='38dp', spacing=6, padding=[4, 2])
-        
+        box_botoes = BoxLayout(orientation='horizontal', size_hint_y=None, height='38dp', spacing=6, padding=[2, 2])
+
         btn_calcular = RoundedButton(text='CALCULAR', bg_color=(0.25, 0.65, 0.85, 1))
-        btn_calcular.color = (1, 1, 1, 1); btn_calcular.bold = True; btn_calcular.font_size = '9.5sp'
+        btn_calcular.color = (1, 1, 1, 1); btn_calcular.bold = True; btn_calcular.font_size = '10sp'
         btn_calcular.bind(on_release=self.calcular_totais)
 
         btn_salvar = RoundedButton(text='SALVAR', bg_color=(0.25, 0.7, 0.4, 1))
-        btn_salvar.color = (1, 1, 1, 1); btn_salvar.bold = True; btn_salvar.font_size = '9.5sp'
+        btn_salvar.color = (1, 1, 1, 1); btn_salvar.bold = True; btn_salvar.font_size = '10sp'
         btn_salvar.bind(on_release=self.salvar_dados)
 
         btn_compartilhar = RoundedButton(text='WHATSAPP', bg_color=(0.9, 0.6, 0.2, 1))
-        btn_compartilhar.color = (1, 1, 1, 1); btn_compartilhar.bold = True; btn_compartilhar.font_size = '9.5sp'
+        btn_compartilhar.color = (1, 1, 1, 1); btn_compartilhar.bold = True; btn_compartilhar.font_size = '10sp'
         btn_compartilhar.bind(on_release=self.compartilhar_dados)
 
         box_botoes.add_widget(btn_calcular)
@@ -781,8 +801,29 @@ class ProductionScreen(Screen):
         self.main_layout.add_widget(CriarBarraNavegacao(ativa='producao'))
         self.add_widget(self.main_layout)
 
+    def _criar_celula_excel(self, widget, largura_hint, cor_fundo, cor_borda=(0.78, 0.80, 0.78, 1)):
+        """Envolve qualquer Label ou TextInput em uma célula com fundo e borda de grade Excel."""
+        from kivy.graphics import Line
+        celula = BoxLayout(size_hint=(largura_hint, 1), padding=[1, 1, 1, 1])
+
+        with celula.canvas.before:
+            Color(*cor_fundo)
+            rect_bg = Rectangle(size=celula.size, pos=celula.pos)
+            Color(*cor_borda)
+            rect_border = Line(rectangle=(celula.x, celula.y, celula.width, celula.height), width=1)
+
+        def atualizar_celula(inst, val):
+            rect_bg.size = inst.size
+            rect_bg.pos = inst.pos
+            rect_border.rectangle = (inst.x, inst.y, inst.width, inst.height)
+            if isinstance(widget, Label) and not isinstance(widget, TextInput):
+                widget.text_size = inst.size
+
+        celula.bind(size=atualizar_celula, pos=atualizar_celula)
+        celula.add_widget(widget)
+        return celula
+
     def mudar_turno(self, turno):
-        """Alterna a visualização da tabela entre o 1º e 2º Turno."""
         self.turno_atual = turno
         if turno == 1:
             self.btn_turno_1.background_color = (0.08, 0.16, 0.36, 1)
@@ -794,40 +835,56 @@ class ProductionScreen(Screen):
         self.aplicar_filtro_meta(None)
 
     def construir_linhas_tabela(self):
-        """Gera as linhas da tabela de entrada com base nos horários do turno ativo."""
+        """Gera todas as linhas da grade sem rolagem, estilo planilha Excel."""
         self.tabela_linhas_layout.clear_widgets()
         self.linhas_widgets = []
         dados_ativos = self.dados_turno_1 if self.turno_atual == 1 else self.dados_turno_2
 
-        for hora, h720_meta, h720_cap in dados_ativos:
-            row = BoxLayout(orientation='horizontal', size_hint_y=None, height='34dp', spacing=1, size_hint_x=1)
+        for idx, (hora, h720_meta, h720_cap) in enumerate(dados_ativos):
+            # Linhas zebradas iguais às de planilha (branco e cinza-esverdeado bem leve)
+            cor_linha = (1.0, 1.0, 1.0, 1) if idx % 2 == 0 else (0.94, 0.96, 0.95, 1)
 
-            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center', size_hint_x=0.24)
-            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', bold=True, halign='center', size_hint_x=0.12)
-            lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', halign='center', size_hint_x=0.12)
-            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='10sp',
-                                halign='center', size_hint_x=0.18, input_filter='int',
-                                padding=[dp(4), dp(8), dp(4), dp(4)])
-            txt_res.bind(height=lambda inst, h: setattr(
-                inst, 'padding', [dp(4), max((h - inst.line_height) / 2, 0), dp(4), 0]))
-            lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center', size_hint_x=0.17)
-            lbl_delta = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center', size_hint_x=0.17)
+            row = BoxLayout(orientation='horizontal', size_hint=(1, 1), spacing=0)
+
+            lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='8.5sp', bold=True, halign='center', valign='middle')
+            lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', bold=True, halign='center', valign='middle')
+            lbl_cap = Label(text=str(h720_cap), color=(0.25, 0.25, 0.25, 1), font_size='9.5sp', halign='center', valign='middle')
+
+            # Célula editável estilo Excel
+            txt_res = TextInput(
+                text='',
+                hint_text='0',
+                multiline=False,
+                font_size='10.5sp',
+                halign='center',
+                input_filter='int',
+                background_normal='',
+                background_active='',
+                background_color=(1.0, 0.99, 0.90, 1),  # Amarelo bem claro para indicar campo editável
+                foreground_color=(0.05, 0.1, 0.2, 1),
+                cursor_color=(0.16, 0.34, 0.24, 1),
+                padding=[2, 4, 2, 4]
+            )
+
+            lbl_prod = Label(text='0', color=(0.08, 0.45, 0.18, 1), bold=True, font_size='9.5sp', halign='center', valign='middle')
+            lbl_delta = Label(text='0', color=(0.3, 0.3, 0.3, 1), bold=True, font_size='9.5sp', halign='center', valign='middle')
 
             linha_info = {
                 'row': row, 'lbl_h': lbl_h, 'lbl_hxh': lbl_hxh, 'lbl_cap': lbl_cap,
                 'txt_res': txt_res, 'lbl_prod': lbl_prod, 'lbl_delta': lbl_delta,
                 'base_meta': h720_meta, 'base_cap': h720_cap
             }
-            # Recalcula automaticamente ao digitar no campo "Res."
             txt_res.bind(text=lambda inst, val: self.calcular_totais(None))
 
-            row.add_widget(lbl_h); row.add_widget(lbl_hxh); row.add_widget(lbl_cap)
-            row.add_widget(txt_res); row.add_widget(lbl_prod); row.add_widget(lbl_delta)
+            row.add_widget(self._criar_celula_excel(lbl_h, 0.25, cor_linha))
+            row.add_widget(self._criar_celula_excel(lbl_hxh, 0.12, cor_linha))
+            row.add_widget(self._criar_celula_excel(lbl_cap, 0.12, cor_linha))
+            row.add_widget(self._criar_celula_excel(txt_res, 0.18, (1.0, 0.99, 0.90, 1)))
+            row.add_widget(self._criar_celula_excel(lbl_prod, 0.17, cor_linha))
+            row.add_widget(self._criar_celula_excel(lbl_delta, 0.16, cor_linha))
 
             self.linhas_widgets.append(linha_info)
             self.tabela_linhas_layout.add_widget(row)
-
-        self.tabela_linhas_layout.height = len(dados_ativos) * 35
 
     def on_enter(self):
         paleta = obter_paleta_atual()
@@ -835,7 +892,6 @@ class ProductionScreen(Screen):
         self.mudar_turno(self.turno_atual)
 
     def aplicar_filtro_meta(self, instance):
-        """Ajusta proporcionalmente os objetivos da tabela (ex: 720 un vs 360 un)."""
         meta_str = self.input_meta_selecionada.text.strip()
         meta_val = 360 if '360' in meta_str else 720
         self.input_meta_selecionada.text = str(meta_val)
@@ -856,10 +912,6 @@ class ProductionScreen(Screen):
         self.calcular_totais(None)
 
     def calcular_totais(self, instance):
-        """
-        Processa os valores acumulados digitados pelo operador, calcula a
-        produção individual por hora e gera o balanço de deltas (perdas/ganhos).
-        """
         total_prod_geral = 0
         total_pos = 0
         total_neg = 0
@@ -903,7 +955,6 @@ class ProductionScreen(Screen):
         salvar_dados_gerais()
 
     def salvar_dados(self, instance):
-        """Grava a sessão de apontamento atual no histórico mantido no banco de dados."""
         self.calcular_totais(None)
         perfil = obter_perfil_atual()
         if isinstance(perfil, dict):
@@ -921,10 +972,6 @@ class ProductionScreen(Screen):
         Popup(title='Sucesso', content=Label(text='Dados salvos com sucesso!'), size_hint=(0.8, 0.3)).open()
 
     def compartilhar_dados(self, instance):
-        """
-        Gera um relatório formatado em texto contendo a produção de cada hora, 
-        copia para a área de transferência e abre a API do WhatsApp para envio.
-        """
         self.calcular_totais(None)
         perfil = obter_perfil_atual()
         meta_total = int(perfil.get('meta_hoje', 720) if isinstance(perfil, dict) else 720)
@@ -975,8 +1022,6 @@ class ProductionScreen(Screen):
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
         self.bg_rect.pos = instance.pos
-
-
 # =============================================================================
 # 5. TELA DE PERFIL DO USUÁRIO (UserProfileScreen)
 # =============================================================================
