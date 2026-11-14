@@ -1415,37 +1415,63 @@ class ChecagemScreen(Screen):
 
     def abrir_scanner(self, qual_banco):
         """
-        No Android, chama o leitor nativo ZXing via Intent.
-        No Windows/PC, simula o preenchimento automático para testes de desenvolvimento.
-        O parâmetro 'qual_banco' (1 ou 2) identifica qual dos campos deve receber o código.
+        No Android, abre o leitor de QR Code do Google.
+        No PC, simula o preenchimento para testes.
+        qual_banco (1 ou 2) indica qual campo recebe o código.
         """
         if platform == 'android':
             try:
-                from jnius import autoclass
+                from jnius import autoclass, cast, PythonJavaClass, java_method
+
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
-                Intent = autoclass('android.content.Intent')
-
                 activity = PythonActivity.mActivity
-                intent = Intent("com.google.zxing.client.android.SCAN")
-                intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
+                Scanning = autoclass('com.google.mlkit.vision.codescanner.GmsBarcodeScanning')
+                scanner = Scanning.getClient(activity)
+                tela = self
 
-                packageManager = activity.getPackageManager()
-                if intent.resolveActivity(packageManager) is not None:
-                    # Dispara a atividade da câmera esperando o retorno vinculado ao ID (qual_banco)
-                    activity.startActivityForResult(intent, qual_banco)
-                else:
-                    self.mostrar_aviso_leitor(qual_banco)
+                class OnOk(PythonJavaClass):
+                    __javainterfaces__ = ['com/google/android/gms/tasks/OnSuccessListener']
+                    __javacontext__ = 'app'
+
+                    @java_method('(Ljava/lang/Object;)V')
+                    def onSuccess(self, resultado):
+                        try:
+                            codigo = cast('com.google.mlkit.vision.barcode.common.Barcode', resultado)
+                            texto = codigo.getRawValue() or ''
+                        except Exception:
+                            texto = ''
+
+                        def _usar(dt):
+                            if texto:
+                                tela.receber_resultado_qr(qual_banco, texto)
+                            else:
+                                tela.mostrar_aviso_leitor(qual_banco)
+                        Clock.schedule_once(_usar, 0)
+
+                class OnErro(PythonJavaClass):
+                    __javainterfaces__ = ['com/google/android/gms/tasks/OnFailureListener']
+                    __javacontext__ = 'app'
+
+                    @java_method('(Ljava/lang/Exception;)V')
+                    def onFailure(self, erro):
+                        Clock.schedule_once(lambda dt: tela.mostrar_aviso_leitor(qual_banco), 0)
+
+                self._ok = OnOk()
+                self._erro = OnErro()
+                tarefa = scanner.startScan()
+                tarefa.addOnSuccessListener(self._ok)
+                tarefa.addOnFailureListener(self._erro)
             except Exception:
                 self.mostrar_aviso_leitor(qual_banco)
         else:
-            # Modo de simulação para desenvolvimento em desktop (Preenche automaticamente)
             if qual_banco == 1:
                 self.input_resultado_1.text = "CHICOTE_STELLANTIS_A01"
             else:
                 self.input_resultado_2.text = "CHICOTE_STELLANTIS_B02"
 
             Popup(title=f'Simulador QR Code {qual_banco}',
-                  content=Label(text=f'Código {qual_banco} preenchido com sucesso!'), size_hint=(0.8, 0.3)).open()
+                  content=Label(text=f'Código {qual_banco} preenchido com sucesso!'),
+                  size_hint=(0.8, 0.3)).open()
 
     def receber_resultado_qr(self, requestCode, texto_lido):
         """
