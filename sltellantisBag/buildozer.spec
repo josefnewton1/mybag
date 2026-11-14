@@ -4,12 +4,12 @@ title = Meu App StellantisaBag
 package.name = stellantisabag
 package.domain = org.stellantis
 
-
 source.include_exts = py,png,jpg,kv,atlas,json,csv
+source.include_patterns = icones/*, *.csv, *.json
 source.dir = .
 version = 0.2
 
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,android
+requirements = python3,kivy,pillow,android,pandas,pyjnius
 
 orientation = portrait
 fullscreen = 0
@@ -21,7 +21,7 @@ android.minapi = 21
 android.ndk = 25b
 android.archs = arm64-v8a
 android.accept_sdk_license = True
-android.permissions = INTERNET
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 
 p4a.branch = v2024.01.21
 
