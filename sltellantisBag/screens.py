@@ -25,12 +25,44 @@ from datetime import datetime
 
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.core.clipboard import Clipboard
 from kivy.utils import platform
+from kivy.metrics import dp
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle, Ellipse, RoundedRectangle, PushMatrix, PopMatrix, Rotate
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.image import Image
 import math
 from kivy.clock import Clock
+import os
+import pandas as pd
+from kivy.app import App
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.button import Button
+from kivy.graphics import Color, Rectangle
+import os
+import pandas as pd
+from kivy.app import App
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.button import Button
+from kivy.graphics import Color, Rectangle
 import os
 import pandas as pd
 from kivy.app import App
@@ -157,7 +189,7 @@ class SplashScreen(Screen):
 
     def ir_para_login(self, dt):
         """Transiciona para a tela de login."""
-        App.get_running_app().sm.current = 'inicio'
+        App.get_running_app().sm.current = 'welcome'
 
     def _update_bg(self, instance, value):
         self.bg_rect.size = instance.size
@@ -187,7 +219,216 @@ class SplashScreen(Screen):
         """Limpa o agendamento ao sair da tela."""
         if hasattr(self, 'anim_event'):
             Clock.unschedule(self.anim_event)
+# =============================================================================
+# 1. TELA DE LOGIN / BOAS-VINDAS (WelcomeScreen)
+# =============================================================================
 
+class WelcomeScreen(Screen):
+    """
+    Tela de login com suporte a Senha Master, validação no arquivo mybag_banco_dados.csv
+    e redirecionamento para o cadastro.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.main_layout = BoxLayout(orientation='vertical', padding=25, spacing=15)
+
+        # Fundo roxo corporativo da Splash Screen
+        with self.main_layout.canvas.before:
+            Color(0.12, 0.08, 0.22, 1)
+            self.bg_rect = Rectangle(size=self.main_layout.size, pos=self.main_layout.pos)
+        self.main_layout.bind(size=self._update_bg, pos=self._update_bg)
+
+        self.main_layout.add_widget(Widget(size_hint_y=None, height='10dp'))
+
+        # --- LOGOTIPO ---
+        logo_layout = AnchorLayout(anchor_x='center', anchor_y='center', size_hint_y=None, height='120dp')
+        self.img_logo = Image(
+            source='icones/icone_mybag.png',
+            size_hint=(None, None),
+            size=(110, 110),
+            allow_stretch=True,
+            keep_ratio=True
+        )
+        logo_layout.add_widget(self.img_logo)
+        self.main_layout.add_widget(logo_layout)
+
+        # --- TÍTULO ---
+        self.lbl_titulo = Label(
+            text='STELLANTIS BAG',
+            color=(0.95, 0.82, 0.45, 1),
+            font_size='18sp',
+            bold=True,
+            size_hint_y=None,
+            height='25dp',
+            halign='center'
+        )
+        self.lbl_titulo.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        self.main_layout.add_widget(self.lbl_titulo)
+
+        # --- FORMULÁRIO (MATRÍCULA E SENHA) ---
+        form_layout = BoxLayout(orientation='vertical', spacing=12, size_hint_y=None, height='140dp', padding=[15, 0])
+
+        self.input_matricula = TextInput(
+            hint_text='Digite sua Matrícula',
+            multiline=False,
+            size_hint_y=None,
+            height='42dp',
+            padding_x=[12, 12],
+            cursor_color=(0.95, 0.82, 0.45, 1)
+        )
+
+        self.input_senha = TextInput(
+            hint_text='Digite sua Senha',
+            password=True,
+            multiline=False,
+            size_hint_y=None,
+            height='42dp',
+            padding_x=[12, 12],
+            cursor_color=(0.95, 0.82, 0.45, 1)
+        )
+
+        form_layout.add_widget(self.input_matricula)
+        form_layout.add_widget(self.input_senha)
+        self.main_layout.add_widget(form_layout)
+
+        # --- MENSAGEM DE ERRO ---
+        self.lbl_erro = Label(
+            text='',
+            color=(1, 0.4, 0.4, 1),
+            font_size='12sp',
+            size_hint_y=None,
+            height='25dp',
+            halign='center'
+        )
+        self.lbl_erro.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+        self.main_layout.add_widget(self.lbl_erro)
+
+        # --- OPÇÕES ---
+        opcoes_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height='35dp', padding=[15, 0])
+
+        lembrar_box = BoxLayout(orientation='horizontal', spacing=8, size_hint_x=0.6)
+        self.chk_lembrar = CheckBox(size_hint_y=None, height='30dp', width='30dp')
+        lbl_lembrar = Label(text='Lembrar-me', color=(0.85, 0.85, 0.9, 1), font_size='12sp', halign='left',
+                            valign='middle')
+        lbl_lembrar.bind(size=lambda inst, val: setattr(inst, 'text_size', inst.size))
+
+        lembrar_box.add_widget(self.chk_lembrar)
+        lembrar_box.add_widget(lbl_lembrar)
+
+        self.btn_esqueci = Button(
+            text='Esqueci a senha?',
+            background_normal='',
+            background_color=(0, 0, 0, 0),
+            color=(0.95, 0.82, 0.45, 1),
+            font_size='12sp',
+            size_hint_x=0.4,
+            halign='right'
+        )
+        self.btn_esqueci.bind(on_release=self.esqueci_senha_acao)
+
+        opcoes_layout.add_widget(lembrar_box)
+        opcoes_layout.add_widget(self.btn_esqueci)
+        self.main_layout.add_widget(opcoes_layout)
+
+        self.main_layout.add_widget(Widget())
+
+        # --- BOTÕES DE AÇÃO ---
+        botoes_layout = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None, height='100dp', padding=[15, 0])
+
+        self.btn_entrar = Button(
+            text='ENTRAR',
+            size_hint_y=None,
+            height='42dp',
+            background_normal='',
+            background_color=(0.95, 0.82, 0.45, 1),
+            color=(0.12, 0.08, 0.22, 1),
+            bold=True,
+            font_size='13sp'
+        )
+        self.btn_entrar.bind(on_release=self.fazer_login)
+
+        # Botão de Cadastrar / Inscrever-se ligado corretamente para abrir a tela de perfil/cadastro
+        self.btn_cadastrar = Button(
+            text='CADASTRAR / INSCREVER-SE',
+            size_hint_y=None,
+            height='42dp',
+            background_normal='',
+            background_color=(0.25, 0.20, 0.45, 1),
+            color=(0.95, 0.82, 0.45, 1),
+            bold=True,
+            font_size='12sp'
+        )
+        self.btn_cadastrar.bind(on_release=self.ir_para_cadastro)
+
+        botoes_layout.add_widget(self.btn_entrar)
+        botoes_layout.add_widget(self.btn_cadastrar)
+        self.main_layout.add_widget(botoes_layout)
+
+        self.add_widget(self.main_layout)
+
+    def fazer_login(self, instance):
+        """Valida se é a senha master ou se consta no arquivo mybag_banco_dados.csv"""
+        matricula_digitada = self.input_matricula.text.strip()
+        senha_digitada = self.input_senha.text.strip()
+
+        if not matricula_digitada or not senha_digitada:
+            self.lbl_erro.text = "Preencha a matrícula e a senha!"
+            return
+
+        # 1. VALIDAÇÃO DA SENHA MASTER
+        if matricula_digitada == "124405" and senha_digitada == "1920":
+            self.lbl_erro.text = ""
+            print("Login autorizado via Senha Master!")
+            App.get_running_app().sm.current = 'inicio'
+            return
+
+        # 2. VALIDAÇÃO NO BANCO CSV (mybad_banco_dados.csv)
+        caminho_csv = 'mybag_banco_dados.csv'
+
+        if not os.path.exists(caminho_csv):
+            self.lbl_erro.text = "Erro: Arquivo mybag_banco_dados.csv não encontrado!"
+            return
+
+        try:
+            # Lê o arquivo CSV usando pandas
+            df = pd.read_csv(caminho_csv)
+            df.columns = [str(col).strip().lower() for col in df.columns]
+
+            if 'matricula' not in df.columns or 'senha' not in df.columns:
+                self.lbl_erro.text = "Erro: O CSV precisa conter as colunas 'matricula' e 'senha'."
+                return
+
+            df['matricula'] = df['matricula'].astype(str).str.strip()
+            df['senha'] = df['senha'].astype(str).str.strip()
+
+            # Checa se o usuário existe na base
+            valido = df[(df['matricula'] == matricula_digitada) & (df['senha'] == senha_digitada)]
+
+            if not valido.empty:
+                self.lbl_erro.text = ""
+                App.get_running_app().sm.current = 'inicio'
+            else:
+                self.lbl_erro.text = "Matrícula ou senha inválidas!"
+
+        except Exception as e:
+            self.lbl_erro.text = "Erro ao processar o banco de dados CSV."
+
+    def ir_para_cadastro(self, instance):
+        """Redireciona para a tela de cadastro/usuário."""
+        # Se a sua tela de cadastro/perfil estiver registrada no main.py com outro nome (ex: 'user_profile' ou 'cadastro'), ajuste aqui:
+        App.get_running_app().sm.current = 'user_profile'
+
+    def esqueci_senha_acao(self, instance):
+        self.lbl_erro.text = "Use a Senha Master ou contate o suporte."
+
+    def _update_bg(self, instance, value):
+        self.bg_rc = getattr(self, 'bg_rect', None)
+        if self.bg_rc:
+            self.bg_rc.size = instance.size
+            self.bg_rc.pos = instance.pos
+#=================================
 # 2. TELA DE INÍCIO / DASHBOARD OPERACIONAL (HomeScreen)
 # =============================================================================
 class HomeScreen(Screen):
@@ -564,7 +805,11 @@ class ProductionScreen(Screen):
             lbl_h = Label(text=hora, color=(0.12, 0.14, 0.18, 1), font_size='9sp', halign='center', size_hint_x=0.24)
             lbl_hxh = Label(text=str(h720_meta), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', bold=True, halign='center', size_hint_x=0.12)
             lbl_cap = Label(text=str(h720_cap), color=(0.12, 0.14, 0.18, 1), font_size='9.5sp', halign='center', size_hint_x=0.12)
-            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='10sp', halign='center', size_hint_x=0.18, padding=[2, 6, 2, 6])
+            txt_res = TextInput(text='', hint_text='Res.', multiline=False, font_size='10sp',
+                                halign='center', size_hint_x=0.18, input_filter='int',
+                                padding=[dp(4), dp(8), dp(4), dp(4)])
+            txt_res.bind(height=lambda inst, h: setattr(
+                inst, 'padding', [dp(4), max((h - inst.line_height) / 2, 0), dp(4), 0]))
             lbl_prod = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center', size_hint_x=0.17)
             lbl_delta = Label(text='0', color=(0.1, 0.5, 0.1, 1), bold=True, font_size='9.5sp', halign='center', size_hint_x=0.17)
 
