@@ -7,7 +7,7 @@ package.domain = org.stellantis
 source.include_exts = py,png,jpg,kv,atlas,json,csv
 source.include_patterns = icones/*, *.csv, *.json
 source.dir = .
-version = 0.3
+version = 0.1
 
 requirements = python3,kivy,pillow,android,pandas,pyjnius
 
